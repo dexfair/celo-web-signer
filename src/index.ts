@@ -42,13 +42,19 @@ async function _rlpEncodedTx (kit: any, web3Tx: any): Promise<RLPEncodedTx> {
   return rlpEncodedTx(celoTx)
 }
 
+export const NETWORK: any = {
+  Mainnet: { provider: 'https://rc1-forno.celo-testnet.org', blockscout: 'https://explorer.celo.org' },
+  Alfajores: { provider: 'https://alfajores-forno.celo-testnet.org', blockscout: 'https://alfajores-blockscout.celo-testnet.org' },
+  Baklava: { provider: 'https://baklava-forno.celo-testnet.org', blockscout: 'https://baklava-blockscout.celo-testnet.org' }
+}
+
 export class Celo {
   protected kit: any
   protected web3: any
   protected provider: any
 
-  async init (provider: string, onAccountsChanged: (account: string) => any) {
-    this.kit = newKit(provider)
+  async init (providerName: string, onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
+    this.kit = newKit(NETWORK[providerName].provider)
     this.provider = await detectEthereumProvider()
     if (this.provider) {
       if (this.provider.isMetaMask) {
@@ -63,6 +69,17 @@ export class Celo {
       this.provider = (window as { [key: string]: any })['celo']
       if ((window as { [key: string]: any })['celo'].isDesktop) {
         this.web3 = new Web3(this.provider)
+        this.provider.on('chainChanged', (chainId: string) => {
+          const INDEX: any = {
+            '42220': { name: 'Mainnet' },
+            '44787': { name: 'Alfajores' },
+            '62320': { name: 'Baklava' }
+          }          
+          this.changeNetwork(INDEX[chainId].name)
+          if (onChainChanged) {
+            onChainChanged(INDEX[chainId].name)
+          }
+        })
         if (onAccountsChanged) {
           this.provider.on('accountsChanged', onAccountsChanged)
         }
@@ -74,9 +91,9 @@ export class Celo {
     }
   }
 
-  changeNetwork (provider: string) {
+  changeNetwork (providerName: string) {
     this.kit = null
-    this.kit = newKit(provider)
+    this.kit = newKit(NETWORK[providerName].provider)
   }
 
   async getAccount (): Promise <string> {
