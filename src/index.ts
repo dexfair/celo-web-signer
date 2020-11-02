@@ -6,6 +6,7 @@ import {
   rlpEncodedTx
 } from '@celo/contractkit/lib/utils/signing-utils'
 import { toTxResult, TransactionResult } from '@celo/contractkit/lib/utils/tx-result'
+import { TransactionReceipt } from 'web3-core'
 // @ts-ignore-next-line
 import { bytes as Bytes, hash as Hash, RLP } from 'eth-lib'
 const detectEthereumProvider = require('@metamask/detect-provider')
@@ -44,24 +45,27 @@ async function _rlpEncodedTx (kit: any, web3Tx: any): Promise<RLPEncodedTx> {
 export class Celo {
   protected kit: any
   protected web3: any
+  protected provider: any
 
   async init (provider: string, onAccountsChanged: (account: string) => any) {
     this.kit = newKit(provider)
-    const ethr = await detectEthereumProvider()
-    if (ethr) {
-      if (ethr.isMetaMask) {
-        this.web3 = new Web3(ethr)
+    this.provider = await detectEthereumProvider()
+    if (this.provider) {
+      if (this.provider.isMetaMask) {
+        this.web3 = new Web3(this.provider)
         if (onAccountsChanged) {
-          ethr.on('accountsChanged', onAccountsChanged)
+          this.provider.on('accountsChanged', onAccountsChanged)
         }
       } else {
-        // TODO: other ethereum wallet did not support.
+        console.error('other ethereum wallet did not support.')
       }
-    } else if ((window as { [key: string]: any })["celo"]) {
-      if ((window as { [key: string]: any })["celo"].isDexFair) {
-        // TODO: for DexFair
-      } else if ((window as { [key: string]: any })["celo"].isDSRV) {
-        // TODO: for DSRV
+    } else if ((window as { [key: string]: any })['celo']) {
+      this.provider = (window as { [key: string]: any })['celo']
+      if ((window as { [key: string]: any })['celo'].isDesktop) {
+        this.web3 = new Web3(this.provider)
+        if (onAccountsChanged) {
+          this.provider.on('accountsChanged', onAccountsChanged)
+        }
       }      
     }
     if (onAccountsChanged) {
@@ -76,7 +80,18 @@ export class Celo {
   }
 
   async getAccount (): Promise <string> {
-    const accounts = await this.web3.eth.getAccounts() // MetaMask
+    let accounts = []
+    if (this.provider.isMetaMask || this.provider.isDesktop) {
+      accounts = await this.web3.eth.getAccounts()
+    } else if (this.provider.isDesktop) {
+      const provider = this.provider
+      const temp = () => {
+        return new Promise((resolve, reject) => {
+          provider.getAccount(resolve, reject)
+        })
+      }
+      accounts = [(await temp())]
+    }
     return accounts.length > 0 ? accounts[0] : ''
   }
 
@@ -95,10 +110,10 @@ export class Celo {
     return celoTx.gas
   }
 
-  async sendTransaction (web3Tx: any): Promise<TransactionResult> {
+  private async sendTransactionMetaMask (web3Tx: any): Promise<TransactionResult> {
     try {
       const celoTx = await _rlpEncodedTx(this.kit, web3Tx)
-      const signature = await this.web3.eth.sign(getHashFromEncoded(celoTx.rlpEncode), celoTx.transaction.from) // MetaMask
+      const signature = await this.web3.eth.sign(getHashFromEncoded(celoTx.rlpEncode), celoTx.transaction.from)
   
       const v = this.kit.web3.utils.hexToNumber(`0x${signature.slice(130)}`) + chainIdTransformationForSigning(celoTx.transaction.chainId)
       const r = Buffer.from(signature.slice(2, 66), 'hex')
@@ -110,5 +125,24 @@ export class Celo {
     } catch (error) {
       throw new Error(error)
     }
+  }
+
+  async sendTransaction (web3Tx: any): Promise<TransactionReceipt | null> {
+    let txReceipt = null
+    if (this.provider.isMetaMask) {
+      txReceipt = (await this.sendTransactionMetaMask(web3Tx)).waitReceipt()
+    } else if (this.provider.isDesktop) {
+      txReceipt = await this.kit.web3.eth.sendTransaction(web3Tx)
+    } else if (this.provider.isMobile) {
+      const provider = this.provider
+      const temp = () => {
+        return new Promise((resolve, reject) => {
+          provider.sendTransaction(web3Tx, resolve, reject)
+        })
+      }
+      const tx = await temp()
+      txReceipt = toTxResult(this.kit.web3.eth.sendSignedTransaction(tx)).waitReceipt()
+    }
+    return txReceipt
   }
 }

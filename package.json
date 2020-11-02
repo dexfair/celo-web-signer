@@ -1,6 +1,6 @@
 {
   "name": "@dexfair/celo-web-signer",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "celo web signer",
   "main": "/lib/index.js",
   "types": "/lib/index.d.ts",
@@ -27,7 +27,7 @@
   "license": "MIT",
   "dependencies": {
     "@celo/contractkit": "^0.4.14",
-    "@metamask/detect-provider": "^1.1.0"
+    "@metamask/detect-provider": "^1.2.0"
   },
   "devDependencies": {
     "typescript": "^4.0.3"
