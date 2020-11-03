@@ -63,8 +63,11 @@ export class Celo {
     exchange: null
   }
 
-  async init (providerName: string, onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
+  constructor(providerName: string) {
     this.kit = newKit(NETWORK[providerName].provider)
+  }
+
+  async init (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
     this.provider = await detectEthereumProvider()
     if (this.provider) {
       if (this.provider.isMetaMask) {
