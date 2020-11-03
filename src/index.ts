@@ -6,11 +6,12 @@ import {
   rlpEncodedTx
 } from '@celo/contractkit/lib/utils/signing-utils'
 import { toTxResult, TransactionResult } from '@celo/contractkit/lib/utils/tx-result'
+import Web3 from 'web3';
 import { TransactionReceipt } from 'web3-core'
+import detectEthereumProvider from '@metamask/detect-provider'
 // @ts-ignore-next-line
 import { bytes as Bytes, hash as Hash, RLP } from 'eth-lib'
-const detectEthereumProvider = require('@metamask/detect-provider')
-const Web3 = require('web3')
+import { ERC20ABI as erc20} from './erc20.abi'
 
 function chainIdTransformationForSigning(chainId: number): number {
   return chainId * 2 + 8
@@ -48,10 +49,19 @@ export const NETWORK: any = {
   Baklava: { provider: 'https://baklava-forno.celo-testnet.org', blockscout: 'https://baklava-blockscout.celo-testnet.org' }
 }
 
+export const ERC20ABI: Array<object> = erc20;
+
 export class Celo {
   protected kit: any
   protected web3: any
   protected provider: any
+
+  protected contracts: any = {
+    erc20: null,
+    goldToken: null,
+    stableToken: null,
+    exchange: null
+  }
 
   async init (providerName: string, onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
     this.kit = newKit(NETWORK[providerName].provider)
@@ -96,6 +106,17 @@ export class Celo {
     this.kit = newKit(NETWORK[providerName].provider)
   }
 
+  async updateContracts () {
+    for(const key in this.contracts) {
+      this.contracts[key] = null    
+    }
+
+    this.contracts.erc20 = new this.kit.web3.eth.Contract(ERC20ABI)
+    this.contracts.goldToken = await this.kit._web3Contracts.getGoldToken()
+    this.contracts.stableToken = await this.kit._web3Contracts.getStableToken()
+    this.contracts.exchange = await this.kit._web3Contracts.getExchange()
+  }
+
   async getAccount (): Promise <string> {
     let accounts = []
     if (this.provider.isMetaMask || this.provider.isDesktop) {
@@ -125,6 +146,12 @@ export class Celo {
       }
     }
     return celoTx.gas
+  }
+
+  async estimateFee (web3Tx: any): Promise<String> {
+    const gas = await this.estimateGas(web3Tx)
+    const price = await this.kit.web3.eth.getGasPrice()
+    return this.kit.web3.utils.fromWei(this.kit.web3.utils.toBN(gas).mul(this.kit.web3.utils.toBN(price)))
   }
 
   private async sendTransactionMetaMask (web3Tx: any): Promise<TransactionResult> {
