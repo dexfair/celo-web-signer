@@ -15,7 +15,7 @@ const celo = new Celo('Mainnet')
 const onChainChanged = (network) => {
   // do something
 }
-const onAccountsChanged = (account) = > {
+const onAccountsChanged = (account) => {
   // do something
 }
 await celo.init(onChainChanged, onAccountsChanged)
