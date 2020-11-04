@@ -1,5 +1,5 @@
 import { TransactionReceipt } from 'web3-core';
-export declare const NETWORK: any;
+export declare const NETWORKS: any;
 export declare const ERC20ABI: Array<object>;
 export declare class Celo {
     protected kit: any;
@@ -8,8 +8,8 @@ export declare class Celo {
     protected contracts: any;
     constructor(providerName: string);
     init(onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any): Promise<void>;
-    changeNetwork(providerName: string): void;
-    updateContracts(): Promise<void>;
+    changeNetwork(providerName: string): Promise<void>;
+    private updateContracts;
     getAccount(): Promise<string>;
     estimateGas(web3Tx: any): Promise<number>;
     estimateFee(web3Tx: any): Promise<String>;

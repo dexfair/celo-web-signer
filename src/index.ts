@@ -43,7 +43,7 @@ async function _rlpEncodedTx (kit: any, web3Tx: any): Promise<RLPEncodedTx> {
   return rlpEncodedTx(celoTx)
 }
 
-export const NETWORK: any = {
+export const NETWORKS: any = {
   Mainnet: { provider: 'https://rc1-forno.celo-testnet.org', blockscout: 'https://explorer.celo.org' },
   Alfajores: { provider: 'https://alfajores-forno.celo-testnet.org', blockscout: 'https://alfajores-blockscout.celo-testnet.org' },
   Baklava: { provider: 'https://baklava-forno.celo-testnet.org', blockscout: 'https://baklava-blockscout.celo-testnet.org' }
@@ -64,7 +64,7 @@ export class Celo {
   }
 
   constructor(providerName: string) {
-    this.kit = newKit(NETWORK[providerName].provider)
+    this.kit = newKit(NETWORKS[providerName].provider)
   }
 
   async init (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
@@ -102,18 +102,21 @@ export class Celo {
       const address = await this.getAccount()
       onAccountsChanged(address)
     }
+    await this.updateContracts()
   }
 
-  changeNetwork (providerName: string) {
-    this.kit = null
-    this.kit = newKit(NETWORK[providerName].provider)
+  async changeNetwork (providerName: string) {
+    if (!this.provider.isDesktop) {
+      this.kit = null
+      this.kit = newKit(NETWORKS[providerName].provider)
+      await this.updateContracts()  
+    }
   }
 
-  async updateContracts () {
+  private async updateContracts () {
     for(const key in this.contracts) {
       this.contracts[key] = null    
     }
-
     this.contracts.erc20 = new this.kit.web3.eth.Contract(ERC20ABI)
     this.contracts.goldToken = await this.kit._web3Contracts.getGoldToken()
     this.contracts.stableToken = await this.kit._web3Contracts.getStableToken()
