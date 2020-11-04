@@ -68,6 +68,7 @@ export class Celo {
   }
 
   async init (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
+    await this.updateContracts()
     this.provider = await detectEthereumProvider()
     if (this.provider) {
       if (this.provider.isMetaMask) {
@@ -102,7 +103,6 @@ export class Celo {
       const address = await this.getAccount()
       onAccountsChanged(address)
     }
-    await this.updateContracts()
   }
 
   async changeNetwork (providerName: string) {
@@ -194,5 +194,13 @@ export class Celo {
       txReceipt = toTxResult(this.kit.web3.eth.sendSignedTransaction(tx)).waitReceipt()
     }
     return txReceipt
+  }
+
+  async sign (message:string, account: string): Promise<string | null> {
+    if (this.provider.isMetaMask || this.provider.isDesktop) {
+      return (await this.web3.eth.personal.sign(message, account))
+    }
+    // TODO: valora not support sign message
+    return null
   }
 }

@@ -15,4 +15,5 @@ export declare class Celo {
     estimateFee(web3Tx: any): Promise<String>;
     private sendTransactionMetaMask;
     sendTransaction(web3Tx: any): Promise<TransactionReceipt | null>;
+    sign(message: string, account: string): Promise<string | null>;
 }
