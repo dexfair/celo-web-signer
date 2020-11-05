@@ -99,7 +99,7 @@ export class Celo {
         if (onAccountsChanged) {
           this.provider.on('accountsChanged', onAccountsChanged)
         }
-      }      
+      }
     }
     if (onAccountsChanged) {
       const address = await this.getAccount()
@@ -129,7 +129,7 @@ export class Celo {
     let accounts = []
     if (this.provider.isMetaMask || this.provider.isDesktop) {
       accounts = await this.web3.eth.getAccounts()
-    } else if (this.provider.isDesktop) {
+    } else if (this.provider.isMobile) {
       const provider = this.provider
       const temp = () => {
         return new Promise((resolve, reject) => {
