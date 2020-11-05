@@ -5,6 +5,7 @@ export declare class Celo {
     protected kit: any;
     protected web3: any;
     protected provider: any;
+    protected isEnable: boolean;
     protected contracts: any;
     constructor(providerName: string);
     init(onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any): Promise<void>;

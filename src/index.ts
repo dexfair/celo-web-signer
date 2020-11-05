@@ -55,6 +55,7 @@ export class Celo {
   protected kit: any
   protected web3: any
   protected provider: any
+  protected isEnable: boolean = false
 
   protected contracts: any = {
     erc20: null,
@@ -77,6 +78,7 @@ export class Celo {
           if (onAccountsChanged) {
             this.provider.on('accountsChanged', onAccountsChanged)
           }
+          this.isEnable = true
         } else {
           console.error('other ethereum wallet did not support.')
         }
@@ -99,9 +101,12 @@ export class Celo {
         if (onAccountsChanged) {
           this.provider.on('accountsChanged', onAccountsChanged)
         }
+        this.isEnable = true
+      } else if ((window as { [key: string]: any })['celo'].isMobile) {
+        this.isEnable = true
       }
     }
-    if (onAccountsChanged) {
+    if (this.isEnable && onAccountsChanged) {
       const address = await this.getAccount()
       onAccountsChanged(address)
     }
