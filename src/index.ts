@@ -187,6 +187,7 @@ export class Celo {
       txReceipt = await this.kit.web3.eth.sendTransaction(web3Tx)
     } else if (this.provider.isMobile) {
       const provider = this.provider
+      web3Tx.chainId = await this.kit.web3.eth.getChainId()
       const temp = () => {
         return new Promise((resolve, reject) => {
           provider.sendTransaction(web3Tx, resolve, reject)
