@@ -69,15 +69,17 @@ export class Celo {
 
   async init (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
     await this.updateContracts()
-    this.provider = await detectEthereumProvider()
-    if (this.provider) {
-      if (this.provider.isMetaMask) {
-        this.web3 = new Web3(this.provider)
-        if (onAccountsChanged) {
-          this.provider.on('accountsChanged', onAccountsChanged)
+    if ((window as { [key: string]: any })['ethereum']) {
+      this.provider = await detectEthereumProvider()
+      if (this.provider) {
+        if (this.provider.isMetaMask) {
+          this.web3 = new Web3(this.provider)
+          if (onAccountsChanged) {
+            this.provider.on('accountsChanged', onAccountsChanged)
+          }
+        } else {
+          console.error('other ethereum wallet did not support.')
         }
-      } else {
-        console.error('other ethereum wallet did not support.')
       }
     } else if ((window as { [key: string]: any })['celo']) {
       this.provider = (window as { [key: string]: any })['celo']
