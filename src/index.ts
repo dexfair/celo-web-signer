@@ -71,6 +71,9 @@ export class Celo {
   async init (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
     await this.updateContracts()
     if ((window as { [key: string]: any })['ethereum']) {
+      if ((window as { [key: string]: any })['ethereum'].isMetaMask) {
+        await (window as { [key: string]: any })['ethereum'].enable()
+      }
       this.provider = await detectEthereumProvider()
       if (this.provider) {
         if (this.provider.isMetaMask) {
