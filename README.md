@@ -6,6 +6,12 @@ A celo-web-signer allows unlimited use of celo web dapps in desktop web browsers
 or if you use `yarn`
 ```yarn add @dexfair/celo-web-signer```
 
+# Support wallets
+- [MetaMask Chrome Extension](https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn)
+- [MetaMask Mobile Wallet](https://play.google.com/store/apps/details?id=io.metamask) (iPHONE is not tested)
+- [DSRV's Chrome Desktop Wallet](https://chrome.google.com/webstore/detail/celo-desktop-wallet/kkilomkmpmkbdnfelcpgckmpcaemjcdh)
+- dexfair dapp browser (with Valora)
+
 # Example
 ## Create a Celo
 ```javascript
