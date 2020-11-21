@@ -79,7 +79,7 @@ export class Celo {
         if (this.provider.isMetaMask) {
           this.web3 = new Web3(this.provider)
           if (onAccountsChanged) {
-            this.provider.on('accountsChanged', onAccountsChanged)
+            this.provider.on('accountsChanged', (accounts:Array<string>) => { onAccountsChanged(accounts[0]) })
           }
           this.isEnable = true
         } else {
@@ -102,7 +102,7 @@ export class Celo {
           }
         })
         if (onAccountsChanged) {
-          this.provider.on('accountsChanged', onAccountsChanged)
+          this.provider.on('accountsChanged', (accounts:Array<string>) => { onAccountsChanged(accounts[0]) })
         }
         this.isEnable = true
       } else if ((window as { [key: string]: any })['celo'].isMobile) {
