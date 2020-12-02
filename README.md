@@ -11,7 +11,7 @@ or if you use `yarn`
 - [MetaMask Mobile Wallet](https://play.google.com/store/apps/details?id=io.metamask) (iPHONE is not tested)
 - [DSRV's Chrome Desktop Wallet](https://chrome.google.com/webstore/detail/celo-desktop-wallet/kkilomkmpmkbdnfelcpgckmpcaemjcdh)
 - Developing
-  - [Ledger: Hardware Wallet](https://www.ledger.com/) (
+  - [Ledger: Hardware Wallet](https://www.ledger.com/)
   - dexfair dapp browser (with Valora)
 
 # Example
