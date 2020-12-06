@@ -9,9 +9,12 @@ import { toTxResult, TransactionResult } from '@celo/contractkit/lib/utils/tx-re
 import Web3 from 'web3';
 import { TransactionReceipt } from 'web3-core'
 import detectEthereumProvider from '@metamask/detect-provider'
+import TransportWebUSB from '@ledgerhq/hw-transport-webusb'
 // @ts-ignore-next-line
 import { bytes as Bytes, hash as Hash, RLP } from 'eth-lib'
 import { ERC20ABI as erc20} from './erc20.abi'
+
+const Ledger = require('@ledgerhq/hw-app-eth').default
 
 function chainIdTransformationForSigning(chainId: number): number {
   return chainId * 2 + 8
@@ -43,7 +46,12 @@ async function _rlpEncodedTx (kit: any, web3Tx: any): Promise<RLPEncodedTx> {
   return rlpEncodedTx(celoTx)
 }
 
-export const NETWORKS: any = {
+interface Network {
+  provider: string
+  blockscout?: string
+}
+
+export const NETWORKS: object = {
   Mainnet: { provider: 'https://rc1-forno.celo-testnet.org', blockscout: 'https://explorer.celo.org' },
   Alfajores: { provider: 'https://alfajores-forno.celo-testnet.org', blockscout: 'https://alfajores-blockscout.celo-testnet.org' },
   Baklava: { provider: 'https://baklava-forno.celo-testnet.org', blockscout: 'https://baklava-blockscout.celo-testnet.org' }
@@ -64,29 +72,28 @@ export class Celo {
     exchange: null
   }
 
-  constructor(providerName: string) {
-    this.kit = newKit(NETWORKS[providerName].provider)
+  constructor(network: Network) {
+    this.kit = newKit(network.provider)
   }
 
   async init (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
     await this.updateContracts()
-    if ((window as { [key: string]: any })['ethereum']) {
-      if ((window as { [key: string]: any })['ethereum'].isMetaMask) {
-        await (window as { [key: string]: any })['ethereum'].enable()
+    const isSupported = await (TransportWebUSB.isSupported())
+    const list = await (TransportWebUSB.list())
+    if (isSupported && list.length > 0) {
+      const transport = await TransportWebUSB.create()
+      const ledger = new Ledger(transport)
+      this.provider = {
+        isLedger: true,
+        index: 0,
+        getPath: (index: any) => { return `44'/52752'/0/0/${index}` },
+        getAccount: ledger.getAddress,
+        signTransaction: ledger.signTransaction,
+        signPersonalMessage: ledger.signPersonalMessage
       }
-      this.provider = await detectEthereumProvider()
-      if (this.provider) {
-        if (this.provider.isMetaMask) {
-          this.web3 = new Web3(this.provider)
-          if (onAccountsChanged) {
-            this.provider.on('accountsChanged', (accounts:Array<string>) => { onAccountsChanged(accounts[0]) })
-          }
-          this.isEnable = true
-        } else {
-          console.error('other ethereum wallet did not support.')
-        }
-      }
-    } else if ((window as { [key: string]: any })['celo']) {
+      this.isEnable = true
+    }
+    if (!this.isEnable && (window as { [key: string]: any })['celo']) {
       this.provider = (window as { [key: string]: any })['celo']
       if ((window as { [key: string]: any })['celo'].isDesktop) {
         this.web3 = new Web3(this.provider)
@@ -108,17 +115,34 @@ export class Celo {
       } else if ((window as { [key: string]: any })['celo'].isMobile) {
         this.isEnable = true
       }
+    } else if (!this.isEnable && (window as { [key: string]: any })['ethereum']) {
+      if ((window as { [key: string]: any })['ethereum'].isMetaMask) {
+        await (window as { [key: string]: any })['ethereum'].enable()
+      }
+      this.provider = await detectEthereumProvider()
+      if (this.provider) {
+        if (this.provider.isMetaMask) {
+          this.web3 = new Web3(this.provider)
+          if (onAccountsChanged) {
+            this.provider.on('accountsChanged', (accounts:Array<string>) => { onAccountsChanged(accounts[0]) })
+          }
+          this.isEnable = true
+        } else {
+          console.error('other ethereum wallet did not support.')
+        }
+      }
     }
+
     if (this.isEnable && onAccountsChanged) {
       const address = await this.getAccount()
       onAccountsChanged(address)
     }
   }
 
-  async changeNetwork (providerName: string) {
+  async changeNetwork (network: Network) {
     if (!this.provider.isDesktop) {
       this.kit = null
-      this.kit = newKit(NETWORKS[providerName].provider)
+      this.kit = newKit(network.provider)
       await this.updateContracts()  
     }
   }
@@ -128,9 +152,9 @@ export class Celo {
       this.contracts[key] = null    
     }
     this.contracts.erc20 = new this.kit.web3.eth.Contract(ERC20ABI)
-    this.contracts.goldToken = await this.kit._web3Contracts.getGoldToken()
-    this.contracts.stableToken = await this.kit._web3Contracts.getStableToken()
-    this.contracts.exchange = await this.kit._web3Contracts.getExchange()
+    this.contracts.goldToken = (await this.kit.contracts.getGoldToken()).contract
+    this.contracts.stableToken = (await this.kit.contracts.getStableToken()).contract
+    this.contracts.exchange = (await this.kit.contracts.getExchange()).contract
   }
 
   async getAccount (): Promise <string> {
@@ -145,6 +169,9 @@ export class Celo {
         })
       }
       accounts = [(await temp())]
+    } else if (this.provider.isLedger) {
+      const result = await this.provider.getAccount(this.provider.getPath(this.provider.index))
+      accounts = [result.address]
     }
     return accounts.length > 0 ? accounts[0] : ''
   }
@@ -203,6 +230,22 @@ export class Celo {
       }
       const tx = await temp()
       txReceipt = toTxResult(this.kit.web3.eth.sendSignedTransaction(tx)).waitReceipt()
+    } else if (this.provider.isLedger) {
+      const celoTx = await _rlpEncodedTx(this.kit, web3Tx)
+      const signature = await this.provider.signTransaction(this.provider.getPath(this.provider.index), celoTx.rlpEncode.slice(2))
+
+      let addToV = celoTx.transaction.chainId * 2 + 35
+      const rv = parseInt(signature.v, 16)
+      if (rv !== addToV && (rv & addToV) !== rv) {
+        addToV += 1
+      }
+
+      const v = addToV
+      const r = Buffer.from(signature.r, 'hex')
+      const s = Buffer.from(signature.s, 'hex')
+
+      const encodeTx = await encodeTransaction(celoTx, { v, s, r })
+      txReceipt = toTxResult(this.kit.web3.eth.sendSignedTransaction(encodeTx.raw)).waitReceipt()
     }
     return txReceipt
   }
@@ -210,8 +253,17 @@ export class Celo {
   async sign (message:string, account: string): Promise<string | null> {
     if (this.provider.isMetaMask || this.provider.isDesktop) {
       return (await this.web3.eth.personal.sign(message, account))
+    } else if (this.provider.isMobile) {
+      // TODO: valora not support sign message
+    } else if (this.provider.isLedger) {
+      // TODO: not tested
+      let {v, s, r} = await this.provider.sign(this.provider.getPath(this.provider.index), Buffer.from(message).toString('hex'))
+      v = (v - 27).toString(16)
+      if (v.length < 2) {
+        v = `0${v}`
+      }
+      return `0x${r}${s}${v}`
     }
-    // TODO: valora not support sign message
     return null
   }
 }

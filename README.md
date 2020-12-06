@@ -10,8 +10,8 @@ or if you use `yarn`
 - [MetaMask Chrome Extension](https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn)
 - [MetaMask Mobile Wallet](https://play.google.com/store/apps/details?id=io.metamask) (iPHONE is not tested)
 - [DSRV's Chrome Desktop Wallet](https://chrome.google.com/webstore/detail/celo-desktop-wallet/kkilomkmpmkbdnfelcpgckmpcaemjcdh)
+- [Ledger: Hardware Wallet USB](https://www.ledger.com/)
 - Developing
-  - [Ledger: Hardware Wallet](https://www.ledger.com/)
   - dexfair dapp browser (with Valora)
 
 # Example
@@ -19,7 +19,7 @@ or if you use `yarn`
 ```javascript
 import { Celo, NETWORKS, ERC20ABI } from "@dexfair/celo-web-signer"
 
-const celo = new Celo('Mainnet')
+const celo = new Celo(NETWORKS['Mainnet'])
 const onChainChanged = (network) => {
   // do something
 }
@@ -31,7 +31,7 @@ await celo.init(onChainChanged, onAccountsChanged)
 
 ## changeNetwork
 ```javascript
-await celo.changeNetwork('Alfajores')
+await celo.changeNetwork(NETWORKS['Alfajores'])
 ```
 
 ## getAccount
