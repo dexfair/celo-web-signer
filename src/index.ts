@@ -10,6 +10,7 @@ import Web3 from 'web3';
 import { TransactionReceipt } from 'web3-core'
 import detectEthereumProvider from '@metamask/detect-provider'
 import TransportWebUSB from '@ledgerhq/hw-transport-webusb'
+import TransportU2F from '@ledgerhq/hw-transport-u2f'
 // @ts-ignore-next-line
 import { bytes as Bytes, hash as Hash, RLP } from 'eth-lib'
 import { ERC20ABI as erc20} from './erc20.abi'
@@ -18,6 +19,18 @@ const Ledger = require('@ledgerhq/hw-app-eth').default
 
 function chainIdTransformationForSigning(chainId: number): number {
   return chainId * 2 + 8
+}
+
+function createLedgerProvider (transport: any) {
+  const ledger = new Ledger(transport)
+  return {
+    isLedger: true,
+    index: 0,
+    getPath: (index: any) => { return `44'/52752'/0/0/${index}` },
+    getAccount: ledger.getAddress,
+    signTransaction: ledger.signTransaction,
+    signPersonalMessage: ledger.signPersonalMessage
+  }
 }
 
 async function _rlpEncodedTx (kit: any, web3Tx: any): Promise<RLPEncodedTx> {
@@ -78,19 +91,15 @@ export class Celo {
 
   async init (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
     await this.updateContracts()
-    const isSupported = await (TransportWebUSB.isSupported())
-    const list = await (TransportWebUSB.list())
-    if (isSupported && list.length > 0) {
+    const isSupported = await TransportWebUSB.isSupported()
+    const listUSB = isSupported ? [] : (await TransportWebUSB.list())
+    if (listUSB.length > 0) {
       const transport = await TransportWebUSB.create()
-      const ledger = new Ledger(transport)
-      this.provider = {
-        isLedger: true,
-        index: 0,
-        getPath: (index: any) => { return `44'/52752'/0/0/${index}` },
-        getAccount: ledger.getAddress,
-        signTransaction: ledger.signTransaction,
-        signPersonalMessage: ledger.signPersonalMessage
-      }
+      this.provider = createLedgerProvider(transport)
+      this.isEnable = true
+    } else if ((await TransportU2F.isSupported()) && (await TransportU2F.list()).length > 0){
+      const transport = await TransportU2F.create()
+      this.provider = createLedgerProvider(transport)
       this.isEnable = true
     }
     if (!this.isEnable && (window as { [key: string]: any })['celo']) {
