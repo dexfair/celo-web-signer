@@ -97,13 +97,18 @@ export class Celo {
     this.kit = newKit(network.provider)
   }
 
-  async init (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
+  async connect (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
     await this.updateContracts()
 
-    if (!this.isEnable && (await TransportWebUSB.isSupported()) && (await TransportWebUSB.list()).length > 0){
-      const transport = await TransportWebUSB.create()
-      this.provider = await createLedgerProvider(transport, 'usb')
-      this.isEnable = this.provider ? true : false
+    if (!this.isEnable && (await TransportWebUSB.isSupported())){
+      if ((await TransportWebUSB.list()).length === 0) {
+        await (window as { [key: string]: any })['navigator'].usb.requestDevice({filters: [{ vendorId: '0x2c97' }]})
+      }
+      if ((await TransportWebUSB.list()).length > 0) {
+        const transport = await TransportWebUSB.create()
+        this.provider = await createLedgerProvider(transport, 'usb')
+        this.isEnable = this.provider ? true : false
+      }
     }
 
     if (!this.isEnable && (await TransportU2F.isSupported()) && (await TransportU2F.list()).length > 0){

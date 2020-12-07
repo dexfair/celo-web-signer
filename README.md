@@ -26,7 +26,7 @@ const onChainChanged = (network) => {
 const onAccountsChanged = (account) => {
   // do something
 }
-await celo.init(onChainChanged, onAccountsChanged)
+await celo.connect(onChainChanged, onAccountsChanged)
 ```
 
 ## changeNetwork
