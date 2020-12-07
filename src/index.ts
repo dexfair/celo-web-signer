@@ -102,7 +102,11 @@ export class Celo {
 
     if (!this.isEnable && (await TransportWebUSB.isSupported())){
       if ((await TransportWebUSB.list()).length === 0) {
-        await (window as { [key: string]: any })['navigator'].usb.requestDevice({filters: [{ vendorId: '0x2c97' }]})
+        try {
+          await (window as { [key: string]: any })['navigator'].usb.requestDevice({filters: [{ vendorId: '0x2c97' }]})          
+        } catch (error) {
+          console.log(new Error(error))
+        }
       }
       if ((await TransportWebUSB.list()).length > 0) {
         const transport = await TransportWebUSB.create()
