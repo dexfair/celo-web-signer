@@ -21,16 +21,24 @@ function chainIdTransformationForSigning(chainId: number): number {
   return chainId * 2 + 8
 }
 
-function createLedgerProvider (transport: any) {
+async function createLedgerProvider (transport: any, type: string) {
   const ledger = new Ledger(transport)
-  return {
+  const provider = {
     isLedger: true,
+    type,
     index: 0,
     getPath: (index: any) => { return `44'/52752'/0/0/${index}` },
     getAccount: ledger.getAddress,
     signTransaction: ledger.signTransaction,
     signPersonalMessage: ledger.signPersonalMessage
   }
+  try {
+    await provider.getAccount(provider.getPath(0))
+    return provider
+  } catch (error) {
+    console.log(new Error(error))
+  }
+  return null
 }
 
 async function _rlpEncodedTx (kit: any, web3Tx: any): Promise<RLPEncodedTx> {
@@ -91,17 +99,19 @@ export class Celo {
 
   async init (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
     await this.updateContracts()
-    const isSupported = await TransportWebUSB.isSupported()
-    const listUSB = isSupported ? [] : (await TransportWebUSB.list())
-    if (listUSB.length > 0) {
+
+    if (!this.isEnable && (await TransportWebUSB.isSupported()) && (await TransportWebUSB.list()).length > 0){
       const transport = await TransportWebUSB.create()
-      this.provider = createLedgerProvider(transport)
-      this.isEnable = true
-    } else if ((await TransportU2F.isSupported()) && (await TransportU2F.list()).length > 0){
-      const transport = await TransportU2F.create()
-      this.provider = createLedgerProvider(transport)
-      this.isEnable = true
+      this.provider = await createLedgerProvider(transport, 'usb')
+      this.isEnable = this.provider ? true : false
     }
+
+    if (!this.isEnable && (await TransportU2F.isSupported()) && (await TransportU2F.list()).length > 0){
+      const transport = await TransportU2F.create()
+      this.provider = await createLedgerProvider(transport, 'u2f')
+      this.isEnable = this.provider ? true : false
+    }
+
     if (!this.isEnable && (window as { [key: string]: any })['celo']) {
       this.provider = (window as { [key: string]: any })['celo']
       if ((window as { [key: string]: any })['celo'].isDesktop) {
