@@ -27,7 +27,7 @@ async function createLedgerProvider (transport: any, type: string) {
     isLedger: true,
     type,
     index: 0,
-    getPath: (index: any) => { return `44'/52752'/0/0/${index}` },
+    getPath: (index: any) => { return `44'/52752'/0'/0/${index}` },
     getAccount: ledger.getAddress,
     signTransaction: ledger.signTransaction,
     signPersonalMessage: ledger.signPersonalMessage
@@ -125,13 +125,13 @@ export class Celo {
       this.provider = (window as { [key: string]: any })['celo']
       if ((window as { [key: string]: any })['celo'].isDesktop) {
         this.web3 = new Web3(this.provider)
-        this.provider.on('chainChanged', (chainId: string) => {
+        this.provider.on('chainChanged', async (chainId: string) => {
           const INDEX: any = {
             '42220': { name: 'Mainnet' },
             '44787': { name: 'Alfajores' },
             '62320': { name: 'Baklava' }
           }          
-          this.changeNetwork(INDEX[chainId].name)
+          await this.changeNetwork(INDEX[chainId].name)
           if (onChainChanged) {
             onChainChanged(INDEX[chainId].name)
           }
@@ -165,6 +165,8 @@ export class Celo {
       const address = await this.getAccount()
       onAccountsChanged(address)
     }
+
+    return this.isEnable
   }
 
   async changeNetwork (network: Network) {

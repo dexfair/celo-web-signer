@@ -12,7 +12,7 @@ export declare class Celo {
     protected isEnable: boolean;
     protected contracts: any;
     constructor(network: Network);
-    connect(onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any): Promise<void>;
+    connect(onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any): Promise<boolean>;
     changeNetwork(network: Network): Promise<void>;
     private updateContracts;
     getAccount(): Promise<string>;
