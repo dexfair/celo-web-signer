@@ -16,6 +16,7 @@ import { bytes as Bytes, hash as Hash, RLP } from 'eth-lib'
 import { ERC20ABI as erc20} from './erc20.abi'
 
 const Ledger = require('@ledgerhq/hw-app-eth').default
+const { detect } = require('detect-browser')
 
 function chainIdTransformationForSigning(chainId: number): number {
   return chainId * 2 + 8
@@ -99,26 +100,32 @@ export class Celo {
 
   async connect (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
     await this.updateContracts()
-
-    if (!this.isEnable && (await TransportWebUSB.isSupported())){
-      if ((await TransportWebUSB.list()).length === 0) {
-        try {
-          await (window as { [key: string]: any })['navigator'].usb.requestDevice({filters: [{ vendorId: '0x2c97' }]})          
-        } catch (error) {
-          console.log(new Error(error))
+    if (!(window as { [key: string]: any })['celo'] || !(window as { [key: string]: any })['celo'].isMobile) {
+      const browser = detect()
+      if (browser && browser.name === 'chrome') {
+        if (!this.isEnable && (await TransportWebUSB.isSupported())){
+          if ((await TransportWebUSB.list()).length === 0) {
+            try {
+              await (window as { [key: string]: any })['navigator'].usb.requestDevice({filters: [{ vendorId: '0x2c97' }]})          
+            } catch (error) {
+              console.log(new Error(error))
+            }
+          }
+          if ((await TransportWebUSB.list()).length > 0) {
+            const transport = await TransportWebUSB.create()
+            this.provider = await createLedgerProvider(transport, 'usb')
+            this.isEnable = this.provider ? true : false
+          }
         }
       }
-      if ((await TransportWebUSB.list()).length > 0) {
-        const transport = await TransportWebUSB.create()
-        this.provider = await createLedgerProvider(transport, 'usb')
-        this.isEnable = this.provider ? true : false
+      
+      if (browser && browser.name === 'opera') {
+        if (!this.isEnable && (await TransportU2F.isSupported()) && (await TransportU2F.list()).length > 0){
+          const transport = await TransportU2F.create()
+          this.provider = await createLedgerProvider(transport, 'u2f')
+          this.isEnable = this.provider ? true : false
+        }
       }
-    }
-
-    if (!this.isEnable && (await TransportU2F.isSupported()) && (await TransportU2F.list()).length > 0){
-      const transport = await TransportU2F.create()
-      this.provider = await createLedgerProvider(transport, 'u2f')
-      this.isEnable = this.provider ? true : false
     }
 
     if (!this.isEnable && (window as { [key: string]: any })['celo']) {

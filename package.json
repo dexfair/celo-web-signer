@@ -1,6 +1,6 @@
 {
   "name": "@dexfair/celo-web-signer",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "celo web signer",
   "main": "/lib/index.js",
   "types": "/lib/index.d.ts",
@@ -30,7 +30,8 @@
     "@ledgerhq/hw-app-eth": "^5.35.1",
     "@ledgerhq/hw-transport-u2f": "^5.34.0",
     "@ledgerhq/hw-transport-webusb": "^5.34.1",
-    "@metamask/detect-provider": "^1.2.0"
+    "@metamask/detect-provider": "^1.2.0",
+    "detect-browser": "^5.2.0"
   },
   "devDependencies": {
     "@types/ledgerhq__hw-transport-u2f": "^4.21.2",
