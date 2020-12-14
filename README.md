@@ -12,7 +12,7 @@ or if you use `yarn`
 - [DSRV's Chrome Desktop Wallet](https://chrome.google.com/webstore/detail/celo-desktop-wallet/kkilomkmpmkbdnfelcpgckmpcaemjcdh)
 - [Ledger: Hardware Wallet USB](https://www.ledger.com/)
 - Developing
-  - dexfair dapp browser (with Valora)
+  - dexfair dapp browser (with Valora, Ledger USB, Ledger BLE)
 
 # Example
 ## Create a Celo
