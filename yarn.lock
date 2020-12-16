@@ -272,24 +272,10 @@
     "@ledgerhq/logs" "^5.30.0"
     rxjs "^6.6.3"
 
-"@ledgerhq/devices@^5.36.0":
-  version "5.36.0"
-  resolved "https://registry.yarnpkg.com/@ledgerhq/devices/-/devices-5.36.0.tgz#f4493bea44390325fcc7a2a0d03bba69fc1604ec"
-  integrity sha512-EwQwLZcz66a2V07Bad0J+Q67LR2afj2NJChJNcA6/gqvzXrtNtJ37u1co9eLU7S5GGll5JGi7KdBqAD9ZTHaaQ==
-  dependencies:
-    "@ledgerhq/errors" "^5.36.0"
-    "@ledgerhq/logs" "^5.36.0"
-    rxjs "^6.6.3"
-
 "@ledgerhq/errors@^5.34.0":
   version "5.34.0"
   resolved "https://registry.yarnpkg.com/@ledgerhq/errors/-/errors-5.34.0.tgz#c003b0929f8ca0c74901a11a88b3e3db4b40e4b7"
   integrity sha512-8Td60sOP5wzsjmxmj9Q5hjrr1XjCfB3Vdifq+1fiD6rpjyscYLgmoP2y5GYDPceDhalA/GOrKNSf+aIVVmBNOw==
-
-"@ledgerhq/errors@^5.36.0":
-  version "5.36.0"
-  resolved "https://registry.yarnpkg.com/@ledgerhq/errors/-/errors-5.36.0.tgz#9d178b54116ae81b1fbdfa80afcd33981453be4c"
-  integrity sha512-VS6aFzn3IDUmSLaX2kAPg5sQOc5m7IwvswAGvoMc3FCi9/a1dXWwtiYn5rWd1QjDJlTKSfCwmSpvUMp8FKoY2Q==
 
 "@ledgerhq/hw-app-eth@^5.35.1":
   version "5.35.1"
@@ -312,17 +298,6 @@
     "@ledgerhq/logs" "^5.30.0"
     u2f-api "0.2.7"
 
-"@ledgerhq/hw-transport-web-ble@^5.36.0":
-  version "5.36.0"
-  resolved "https://registry.yarnpkg.com/@ledgerhq/hw-transport-web-ble/-/hw-transport-web-ble-5.36.0.tgz#2fc7d3b49abec89a62ec2789ad58b97b39da236e"
-  integrity sha512-9bGdPJcwwMA6Tm877MfNrQOuvgYStS/OlOuGaa3rpbNprQ9oC6RW0ZOqP/pjLLuYFCfYQs3ZsVrvgp9INiZl3A==
-  dependencies:
-    "@ledgerhq/devices" "^5.36.0"
-    "@ledgerhq/errors" "^5.36.0"
-    "@ledgerhq/hw-transport" "^5.36.0"
-    "@ledgerhq/logs" "^5.36.0"
-    rxjs "^6.6.3"
-
 "@ledgerhq/hw-transport-webusb@^5.34.1":
   version "5.34.1"
   resolved "https://registry.yarnpkg.com/@ledgerhq/hw-transport-webusb/-/hw-transport-webusb-5.34.1.tgz#e34d42442d310d0609f6bd762b0c40583e0f2a92"
@@ -342,24 +317,10 @@
     "@ledgerhq/errors" "^5.34.0"
     events "^3.2.0"
 
-"@ledgerhq/hw-transport@^5.36.0":
-  version "5.36.0"
-  resolved "https://registry.yarnpkg.com/@ledgerhq/hw-transport/-/hw-transport-5.36.0.tgz#b6e951c411182ece59c7b527f948240d1b0a8a51"
-  integrity sha512-rwLTBUsdGCC3Ka4G99sqGbbyVhkVxXd4eWWeOb8gnuKhrTydZGkkP3JdZSHgWSrVRYTAUmkE1AnUmchbfh361w==
-  dependencies:
-    "@ledgerhq/devices" "^5.36.0"
-    "@ledgerhq/errors" "^5.36.0"
-    events "^3.2.0"
-
 "@ledgerhq/logs@^5.30.0":
   version "5.30.0"
   resolved "https://registry.yarnpkg.com/@ledgerhq/logs/-/logs-5.30.0.tgz#76e8d7e5a06a73c9b99da51fa5befd5cfd5309d4"
   integrity sha512-wUhg2VTfUrWihjdGqKkH/s7TBzdIM1yyd2LiscYsfTX2I0xYDMnpE+NkMReeGU8PN3QhCPgnlg9/P9V6UWoJBA==
-
-"@ledgerhq/logs@^5.36.0":
-  version "5.36.0"
-  resolved "https://registry.yarnpkg.com/@ledgerhq/logs/-/logs-5.36.0.tgz#78721347162fb834d90effa1123b363dc46e3a52"
-  integrity sha512-HnD/hByteUL1MsJu1lMinY9bNq8++5mWJ8qHCW9dLC9LbsvWIqwLwmZiGcW0D2tX9p0/C5ESuIpJ9B/d2dReuw==
 
 "@metamask/detect-provider@^1.2.0":
   version "1.2.0"
@@ -2288,6 +2249,11 @@ mock-fs@^4.1.0:
   version "4.13.0"
   resolved "https://registry.yarnpkg.com/mock-fs/-/mock-fs-4.13.0.tgz#31c02263673ec3789f90eb7b6963676aa407a598"
   integrity sha512-DD0vOdofJdoaRNtnWcrXe6RQbpHkPPmtqGq14uRX0F8ZKJ5nv89CVTYl/BZdppDxBDaV0hl75htg3abpEWlPZA==
+
+moment@^2.29.1:
+  version "2.29.1"
+  resolved "https://registry.yarnpkg.com/moment/-/moment-2.29.1.tgz#b2be769fa31940be9eeea6469c075e35006fa3d3"
+  integrity sha512-kHmoybcPV8Sqy59DwNDY3Jefr64lK/by/da0ViFcuA4DH0vQg5Q6Ze5VimxkfQNSC+Mls/Kx53s7TjP1RhFEDQ==
 
 ms@2.0.0:
   version "2.0.0"
