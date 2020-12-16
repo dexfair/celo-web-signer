@@ -7,7 +7,7 @@
   resolved "https://registry.yarnpkg.com/@celo/base/-/base-1.0.0-beta3.tgz#29c2acd54f7158c8e9ca9c567629b65cb5d6808d"
   integrity sha512-fsMCheoFHe1ffULXeUsDtPb5UQr7P+xdCpJZIb/cYxCWNbJONYC2IAPpjGX2k75jTrw0hBKcAL5cFef2ldg4Mw==
 
-"@celo/connect@1.0.0-beta3":
+"@celo/connect@1.0.0-beta3", "@celo/connect@^1.0.0-beta3":
   version "1.0.0-beta3"
   resolved "https://registry.yarnpkg.com/@celo/connect/-/connect-1.0.0-beta3.tgz#93fa09e13011baed93b934c59f4fddb5b9b3f3ad"
   integrity sha512-quFLbNh4iaPSFGDmuySQKI2QCqyTP3V/PyAGyLFMKmwQzviyBABA4+TMPMpfnmPhxL2XdJCpBlOZ2/Y0b8aLCQ==
