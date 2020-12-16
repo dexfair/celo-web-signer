@@ -14,6 +14,9 @@ or if you use `yarn`
 - Developing
   - dexfair dapp browser (with Valora, Ledger USB, Ledger BLE)
 
+# Celo contractkit version
+```"@celo/contractkit": "^1.0.0-beta3"```
+
 # Example
 ## Create a Celo
 ```javascript

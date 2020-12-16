@@ -10,13 +10,16 @@ export declare class Celo {
     protected web3: any;
     protected provider: any;
     protected isEnable: boolean;
+    protected chainId: any;
     protected contracts: any;
     constructor(network: Network);
     connect(onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any): Promise<boolean>;
     changeNetwork(network: Network): Promise<void>;
     private updateContracts;
     getAccount(): Promise<string>;
-    estimateGas(web3Tx: any): Promise<number>;
+    private fillTxDefaults;
+    private rlpEncodedTx;
+    estimateGas(web3Tx: any): Promise<string | number>;
     estimateFee(web3Tx: any): Promise<String>;
     private sendTransactionMetaMask;
     sendTransaction(web3Tx: any): Promise<TransactionReceipt | null>;

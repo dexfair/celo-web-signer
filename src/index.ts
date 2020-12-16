@@ -1,12 +1,7 @@
-import { newKit } from '@celo/contractkit'
-import {
-  encodeTransaction,
-  getHashFromEncoded,
-  RLPEncodedTx,
-  rlpEncodedTx
-} from '@celo/contractkit/lib/utils/signing-utils'
-import { toTxResult, TransactionResult } from '@celo/contractkit/lib/utils/tx-result'
-import Web3 from 'web3';
+import {newKit} from '@celo/contractkit'
+import {RLPEncodedTx, CeloTx, toTxResult, TransactionResult} from '@celo/connect'
+import {encodeTransaction, getHashFromEncoded, rlpEncodedTx} from '@celo/wallet-base'
+import Web3 from 'web3'
 import { TransactionReceipt } from 'web3-core'
 import detectEthereumProvider from '@metamask/detect-provider'
 import TransportWebUSB from '@ledgerhq/hw-transport-webusb'
@@ -17,10 +12,6 @@ import { ERC20ABI as erc20} from './erc20.abi'
 
 const Ledger = require('@ledgerhq/hw-app-eth').default
 const { detect } = require('detect-browser')
-
-function chainIdTransformationForSigning(chainId: number): number {
-  return chainId * 2 + 8
-}
 
 async function createLedgerProvider (transport: any, type: string) {
   const ledger = new Ledger(transport)
@@ -42,32 +33,6 @@ async function createLedgerProvider (transport: any, type: string) {
   return null
 }
 
-async function _rlpEncodedTx (kit: any, web3Tx: any): Promise<RLPEncodedTx> {
-  let celoTx = kit.fillTxDefaults(JSON.parse(JSON.stringify(web3Tx)))
-  celoTx = await kit.fillGasPrice(celoTx)
-
-  if (celoTx.gas == null) {
-    try {
-      const gas = await kit.web3.eth.estimateGas(celoTx)
-      celoTx.gas = Math.round(gas * kit.config.gasInflationFactor)
-    } catch (e) {
-      throw new Error(e)
-    }
-  }
-
-  if (celoTx.gasPrice === '0x0') {
-    const gasPrice = await kit.web3.eth.getGasPrice()
-    celoTx.gasPrice = gasPrice
-  }
-
-  const chainId = await kit.web3.eth.getChainId()
-  celoTx.chainId = chainId
-  const nonce = await kit.web3.eth.getTransactionCount(celoTx.from)
-  celoTx.nonce = nonce
-
-  return rlpEncodedTx(celoTx)
-}
-
 interface Network {
   provider: string
   blockscout?: string
@@ -79,13 +44,14 @@ export const NETWORKS: object = {
   Baklava: { provider: 'https://baklava-forno.celo-testnet.org', blockscout: 'https://baklava-blockscout.celo-testnet.org' }
 }
 
-export const ERC20ABI: Array<object> = erc20;
+export const ERC20ABI: Array<object> = erc20
 
 export class Celo {
   protected kit: any
   protected web3: any
   protected provider: any
   protected isEnable: boolean = false
+  protected chainId: any
 
   protected contracts: any = {
     erc20: null,
@@ -173,6 +139,8 @@ export class Celo {
       onAccountsChanged(address)
     }
 
+    this.chainId = await this.kit.web3.eth.getChainId()
+
     return this.isEnable
   }
 
@@ -180,6 +148,7 @@ export class Celo {
     if (!this.provider.isDesktop) {
       this.kit = null
       this.kit = newKit(network.provider)
+      this.chainId = await this.kit.web3.eth.getChainId()
       await this.updateContracts()  
     }
   }
@@ -213,14 +182,51 @@ export class Celo {
     return accounts.length > 0 ? accounts[0] : ''
   }
 
-  async estimateGas (web3Tx: any): Promise<number> {
-    let celoTx = this.kit.fillTxDefaults(JSON.parse(JSON.stringify(web3Tx)))
+  private fillTxDefaults(from: string, tx?: CeloTx): CeloTx {
+    const defaultTx: CeloTx = {
+      from,
+      feeCurrency: this.kit.connection.defaultFeeCurrency,
+      gasPrice: this.kit.connection.defaultGasPrice,
+    }
+
+    return {
+      ...defaultTx,
+      ...tx,
+    }
+  }
+
+  private async rlpEncodedTx(web3Tx: any): Promise<RLPEncodedTx> {
+    let celoTx = this.fillTxDefaults(web3Tx.from, JSON.parse(JSON.stringify(web3Tx)))
     celoTx = await this.kit.fillGasPrice(celoTx)
   
     if (celoTx.gas == null) {
       try {
         const gas = await this.kit.web3.eth.estimateGas(celoTx)
-        celoTx.gas = Math.round(gas * this.kit.config.gasInflationFactor)
+        celoTx.gas = Math.round(gas * this.kit.connection.defaultGasInflationFactor)
+      } catch (e) {
+        throw new Error(e)
+      }
+    }
+  
+    if (celoTx.gasPrice === '0x0') {
+      const gasPrice = await this.kit.web3.eth.getGasPrice()
+      celoTx.gasPrice = gasPrice
+    }
+  
+    celoTx.chainId = this.chainId
+    celoTx.nonce = await this.kit.web3.eth.getTransactionCount(web3Tx.from)
+  
+    return rlpEncodedTx(celoTx)
+  }
+
+  async estimateGas (web3Tx: any): Promise<string|number> {
+    let celoTx = this.fillTxDefaults(web3Tx.from, JSON.parse(JSON.stringify(web3Tx)))
+    celoTx = await this.kit.fillGasPrice(celoTx)
+  
+    if (celoTx.gas == null) {
+      try {
+        const gas = await this.kit.web3.eth.estimateGas(celoTx)
+        celoTx.gas = Math.round(gas * this.kit.connection.defaultGasInflationFactor)
       } catch (e) {
         throw new Error(e)
       }
@@ -236,10 +242,10 @@ export class Celo {
 
   private async sendTransactionMetaMask (web3Tx: any): Promise<TransactionResult> {
     try {
-      const celoTx = await _rlpEncodedTx(this.kit, web3Tx)
+      const celoTx = await this.rlpEncodedTx(web3Tx)
       const signature = await this.web3.eth.sign(getHashFromEncoded(celoTx.rlpEncode), celoTx.transaction.from)
   
-      const v = this.kit.web3.utils.hexToNumber(`0x${signature.slice(130)}`) + chainIdTransformationForSigning(celoTx.transaction.chainId)
+      const v = this.kit.web3.utils.hexToNumber(`0x${signature.slice(130)}`) + (this.chainId * 2 + 8)
       const r = Buffer.from(signature.slice(2, 66), 'hex')
       const s = Buffer.from(signature.slice(66, 130), 'hex')
   
@@ -268,10 +274,10 @@ export class Celo {
       const tx = await temp()
       txReceipt = toTxResult(this.kit.web3.eth.sendSignedTransaction(tx)).waitReceipt()
     } else if (this.provider.isLedger) {
-      const celoTx = await _rlpEncodedTx(this.kit, web3Tx)
+      const celoTx = await this.rlpEncodedTx(web3Tx)
       const signature = await this.provider.signTransaction(this.provider.getPath(this.provider.index), celoTx.rlpEncode.slice(2))
 
-      let addToV = celoTx.transaction.chainId * 2 + 35
+      let addToV = this.chainId * 2 + 35
       const rv = parseInt(signature.v, 16)
       if (rv !== addToV && (rv & addToV) !== rv) {
         addToV += 1

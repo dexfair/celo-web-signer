@@ -1,6 +1,6 @@
 {
   "name": "@dexfair/celo-web-signer",
-  "version": "0.3.9",
+  "version": "0.4.0",
   "description": "celo web signer",
   "main": "/lib/index.js",
   "types": "/lib/index.d.ts",
@@ -26,9 +26,10 @@
   "author": "daoauth",
   "license": "MIT",
   "dependencies": {
-    "@celo/contractkit": "^0.4.14",
+    "@celo/contractkit": "^1.0.0-beta3",
     "@ledgerhq/hw-app-eth": "^5.35.1",
     "@ledgerhq/hw-transport-u2f": "^5.34.0",
+    "@ledgerhq/hw-transport-web-ble": "^5.36.0",
     "@ledgerhq/hw-transport-webusb": "^5.34.1",
     "@metamask/detect-provider": "^1.2.0",
     "detect-browser": "^5.2.0"
