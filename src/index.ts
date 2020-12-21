@@ -61,6 +61,10 @@ export class Celo {
         this.wallet = await newDAppBrowserWalletWithSetup(web3, provider)
         this.kit = newKitFromWeb3(web3, this.wallet)
         await this.updateContracts()
+        if (onAccountsChanged) {
+          const accounts = this.wallet.getAccounts()
+          onAccountsChanged(accounts)
+        }
         this.isConnected = true
       } else {
         throw new Error('other celo wallet did not support.')

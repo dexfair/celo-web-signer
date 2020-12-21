@@ -46,28 +46,6 @@ await celo.changeNetwork(NETWORKS['Alfajores'])
 const account = await celo.getAccount()
 ```
 
-## estimateGas
-```javascript
-const tx = {
-  from: myAddress,
-  to: someAddress,
-  value: oneGold,
-  data: someData
-}
-const gas = await celo.estimateGas(tx)
-```
-
-## estimateFee
-```javascript
-const tx = {
-  from: myAddress,
-  to: someAddress,
-  value: oneGold,
-  data: someData
-}
-const fee = await celo.estimateFee(tx)
-```
-
 ## sendTransaction
 ```javascript
 const tx = {
