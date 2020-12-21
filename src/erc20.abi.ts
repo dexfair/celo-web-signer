@@ -1,4 +1,5 @@
-export const ERC20ABI: Array<object> = [
+import {AbiItem} from '@celo/connect'
+export const ERC20ABI: AbiItem[] = [
   {
       "constant": true,
       "inputs": [],

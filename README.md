@@ -29,7 +29,11 @@ const onChainChanged = (network) => {
 const onAccountsChanged = (account) => {
   // do something
 }
-await celo.connect(onChainChanged, onAccountsChanged)
+await celo.connect(onChainChanged, onAccountsChanged) // for extension wallet or dapp browser
+
+// or
+
+await celo.connectLedger(onAccountsChanged) // for ledger wallet for web browsers
 ```
 
 ## changeNetwork

@@ -1,1 +1,2 @@
-export declare const ERC20ABI: Array<object>;
+import { AbiItem } from '@celo/connect';
+export declare const ERC20ABI: AbiItem[];

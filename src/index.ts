@@ -1,37 +1,13 @@
-import {newKit} from '@celo/contractkit'
-import {RLPEncodedTx, CeloTx, toTxResult, TransactionResult} from '@celo/connect'
-import {encodeTransaction, getHashFromEncoded, rlpEncodedTx} from '@celo/wallet-base'
+import { newKitFromWeb3, ContractKit, newKit } from '@celo/contractkit'
+import { Address, AbiItem, ReadOnlyWallet, TransactionResult, CeloTxReceipt } from '@celo/connect'
 import Web3 from 'web3'
-import { TransactionReceipt } from 'web3-core'
 import detectEthereumProvider from '@metamask/detect-provider'
 import TransportWebUSB from '@ledgerhq/hw-transport-webusb'
-import TransportU2F from '@ledgerhq/hw-transport-u2f'
-// @ts-ignore-next-line
-import { bytes as Bytes, hash as Hash, RLP } from 'eth-lib'
-import { ERC20ABI as erc20} from './erc20.abi'
-
-const Ledger = require('@ledgerhq/hw-app-eth').default
-const { detect } = require('detect-browser')
-
-async function createLedgerProvider (transport: any, type: string) {
-  const ledger = new Ledger(transport)
-  const provider = {
-    isLedger: true,
-    type,
-    index: 0,
-    getPath: (index: any) => { return `44'/52752'/0'/0/${index}` },
-    getAccount: ledger.getAddress,
-    signTransaction: ledger.signTransaction,
-    signPersonalMessage: ledger.signPersonalMessage
-  }
-  try {
-    await provider.getAccount(provider.getPath(0))
-    return provider
-  } catch (error) {
-    console.log(new Error(error))
-  }
-  return null
-}
+// import { detect } from  'detect-browser'
+import { ERC20ABI as erc20 } from './erc20.abi'
+import { newLedgerWalletWithSetup } from './wallet/ledgerWallet'
+import { newMetaMaskWalletWithSetup } from './wallet/metamask'
+import { newDAppBrowserWalletWithSetup } from './wallet/dappbrowser'
 
 interface Network {
   provider: string
@@ -44,14 +20,14 @@ export const NETWORKS: object = {
   Baklava: { provider: 'https://baklava-forno.celo-testnet.org', blockscout: 'https://baklava-blockscout.celo-testnet.org' }
 }
 
-export const ERC20ABI: Array<object> = erc20
+export const ERC20ABI: AbiItem[] = erc20
 
 export class Celo {
-  protected kit: any
-  protected web3: any
-  protected provider: any
-  protected isEnable: boolean = false
-  protected chainId: any
+  protected kit: ContractKit|null = null
+  protected isConnected: boolean = false
+
+  private isDesktop: boolean = false
+  private wallet: ReadOnlyWallet|null = null
 
   protected contracts: any = {
     erc20: null,
@@ -60,252 +36,135 @@ export class Celo {
     exchange: null
   }
 
-  constructor(network: Network) {
-    this.kit = newKit(network.provider)
-  }
-
-  async connect (onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any) {
-    await this.updateContracts()
-    if (!(window as { [key: string]: any })['celo'] || !(window as { [key: string]: any })['celo'].isMobile) {
-      const browser = detect()
-      if (browser && browser.name === 'chrome') {
-        if (!this.isEnable && (await TransportWebUSB.isSupported())){
-          if ((await TransportWebUSB.list()).length === 0) {
-            try {
-              await (window as { [key: string]: any })['navigator'].usb.requestDevice({filters: [{ vendorId: '0x2c97' }]})          
-            } catch (error) {
-              console.log(new Error(error))
-            }
+  async connect (network: Network, onChainChanged: (network: object) => any, onAccountsChanged: (accounts: Address[]) => any) {
+    if ((window as { [key: string]: any })['celo']) {
+      const provider: any = (window as { [key: string]: any })['celo']
+      if (provider.isDesktop) {
+        this.kit = newKit(network.provider)
+        provider.on('accountsChanged', (accounts:Array<Address>) => {
+          if (onAccountsChanged) {
+            onAccountsChanged(accounts)
           }
-          if ((await TransportWebUSB.list()).length > 0) {
-            const transport = await TransportWebUSB.create()
-            this.provider = await createLedgerProvider(transport, 'usb')
-            this.isEnable = this.provider ? true : false
-          }
-        }
-      }
-      
-      if (browser && browser.name === 'opera') {
-        if (!this.isEnable && (await TransportU2F.isSupported()) && (await TransportU2F.list()).length > 0){
-          const transport = await TransportU2F.create()
-          this.provider = await createLedgerProvider(transport, 'u2f')
-          this.isEnable = this.provider ? true : false
-        }
-      }
-    }
-
-    if (!this.isEnable && (window as { [key: string]: any })['celo']) {
-      this.provider = (window as { [key: string]: any })['celo']
-      if ((window as { [key: string]: any })['celo'].isDesktop) {
-        this.web3 = new Web3(this.provider)
-        this.provider.on('chainChanged', async (chainId: string) => {
+        })
+        provider.on('chainChanged', async (chainId: string) => {
           const INDEX: any = {
             '42220': { name: 'Mainnet' },
             '44787': { name: 'Alfajores' },
             '62320': { name: 'Baklava' }
           }          
-          await this.changeNetwork(INDEX[chainId].name)
           if (onChainChanged) {
             onChainChanged(INDEX[chainId].name)
           }
         })
-        if (onAccountsChanged) {
-          this.provider.on('accountsChanged', (accounts:Array<string>) => { onAccountsChanged(accounts[0]) })
-        }
-        this.isEnable = true
-      } else if ((window as { [key: string]: any })['celo'].isMobile) {
-        this.isEnable = true
+      } else if (provider.isMobile) {
+        const web3 = new Web3(network.provider)
+        this.wallet = await newDAppBrowserWalletWithSetup(web3, provider)
+        this.kit = newKitFromWeb3(web3, this.wallet)
+        await this.updateContracts()
+        this.isConnected = true
+      } else {
+        throw new Error('other celo wallet did not support.')
       }
-    } else if (!this.isEnable && (window as { [key: string]: any })['ethereum']) {
+    } else if ((window as { [key: string]: any })['ethereum']) {
       if ((window as { [key: string]: any })['ethereum'].isMetaMask) {
         await (window as { [key: string]: any })['ethereum'].enable()
       }
-      this.provider = await detectEthereumProvider()
-      if (this.provider) {
-        if (this.provider.isMetaMask) {
-          this.web3 = new Web3(this.provider)
-          if (onAccountsChanged) {
-            this.provider.on('accountsChanged', (accounts:Array<string>) => { onAccountsChanged(accounts[0]) })
+      const provider: any = await detectEthereumProvider({mustBeMetaMask: true})
+      if (provider && provider.isMetaMask) {
+        const web3 = new Web3(network.provider)
+        this.wallet = await newMetaMaskWalletWithSetup(provider, onAccountsChanged)
+        this.kit = newKitFromWeb3(web3, this.wallet)
+        await this.updateContracts()
+        if (onAccountsChanged) {
+          const accounts = this.wallet.getAccounts()
+          onAccountsChanged(accounts)
+        }
+        this.isConnected = true
+      } else {
+        throw new Error('other ethereum wallet did not support.')
+      }
+    }
+  }
+
+  async connectLedger (network: Network, onAccountsChanged: (accounts: Address[]) => any) {
+    if (!(window as { [key: string]: any })['celo'] || !(window as { [key: string]: any })['celo'].isMobile) {
+      // const browser = detect()
+      if ((await TransportWebUSB.isSupported())) {
+        if ((await TransportWebUSB.list()).length === 0) {
+          try {
+            await (window as { [key: string]: any })['navigator'].usb.requestDevice({filters: [{ vendorId: '0x2c97' }]})          
+          } catch (error) {
+            console.log(new Error(error))
           }
-          this.isEnable = true
-        } else {
-          console.error('other ethereum wallet did not support.')
+        }
+        if ((await TransportWebUSB.list()).length > 0) {
+          const transport = await TransportWebUSB.create()
+          await this.ledgerSetup(network, transport, onAccountsChanged)
         }
       }
     }
+  }
 
-    if (this.isEnable && onAccountsChanged) {
-      const address = await this.getAccount()
-      onAccountsChanged(address)
+  private async ledgerSetup (network: Network, transport: any, onAccountsChanged: (accounts: Address[]) => any) {
+    this.wallet = await newLedgerWalletWithSetup(transport)
+    const address = this.wallet.getAccounts()
+    if (address.length>0) {
+      const web3 = new Web3(network.provider)
+      this.kit = newKitFromWeb3(web3, this.wallet)
+      await this.updateContracts()
+      if (onAccountsChanged) {
+        onAccountsChanged(address)
+      }
+      this.isConnected = true 
     }
-
-    this.chainId = await this.kit.web3.eth.getChainId()
-
-    return this.isEnable
   }
 
   async changeNetwork (network: Network) {
-    if (!this.provider.isDesktop) {
-      this.kit = null
-      this.kit = newKit(network.provider)
-      this.chainId = await this.kit.web3.eth.getChainId()
-      await this.updateContracts()  
-    }
+    if (!this.isDesktop && this.kit && this.wallet) {
+      const web3 = new Web3(network.provider)
+      this.kit = newKitFromWeb3(web3, this.wallet)
+      await this.updateContracts()
+    } 
   }
 
   private async updateContracts () {
     for(const key in this.contracts) {
       this.contracts[key] = null    
     }
-    this.contracts.erc20 = new this.kit.web3.eth.Contract(ERC20ABI)
-    this.contracts.goldToken = (await this.kit.contracts.getGoldToken()).contract
-    this.contracts.stableToken = (await this.kit.contracts.getStableToken()).contract
-    this.contracts.exchange = (await this.kit.contracts.getExchange()).contract
-  }
-
-  async getAccount (): Promise <string> {
-    let accounts = []
-    if (this.provider.isMetaMask || this.provider.isDesktop) {
-      accounts = await this.web3.eth.getAccounts()
-    } else if (this.provider.isMobile) {
-      const provider = this.provider
-      const temp = () => {
-        return new Promise((resolve, reject) => {
-          provider.getAccount(resolve, reject)
-        })
-      }
-      accounts = [(await temp())]
-    } else if (this.provider.isLedger) {
-      const result = await this.provider.getAccount(this.provider.getPath(this.provider.index))
-      accounts = [result.address]
-    }
-    return accounts.length > 0 ? accounts[0] : ''
-  }
-
-  private fillTxDefaults(from: string, tx?: CeloTx): CeloTx {
-    const defaultTx: CeloTx = {
-      from,
-      feeCurrency: this.kit.connection.defaultFeeCurrency,
-      gasPrice: this.kit.connection.defaultGasPrice,
-    }
-
-    return {
-      ...defaultTx,
-      ...tx,
+    if (this.kit) {
+      this.contracts.erc20 = new this.kit.web3.eth.Contract(ERC20ABI)
+      this.contracts.goldToken = await this.kit._web3Contracts.getGoldToken()
+      this.contracts.stableToken = await this.kit._web3Contracts.getStableToken()
+      this.contracts.exchange = await this.kit._web3Contracts.getExchange()
     }
   }
 
-  private async rlpEncodedTx(web3Tx: any): Promise<RLPEncodedTx> {
-    let celoTx = this.fillTxDefaults(web3Tx.from, JSON.parse(JSON.stringify(web3Tx)))
-    celoTx = await this.kit.fillGasPrice(celoTx)
-  
-    if (celoTx.gas == null) {
-      try {
-        const gas = await this.kit.web3.eth.estimateGas(celoTx)
-        celoTx.gas = Math.round(gas * this.kit.connection.defaultGasInflationFactor)
-      } catch (e) {
-        throw new Error(e)
-      }
+  async getAccounts (): Promise<Address[]> {
+    if (this.isDesktop) {
+      return this.kit ? (await this.kit.web3.eth.getAccounts()) : []
     }
-  
-    if (celoTx.gasPrice === '0x0') {
-      const gasPrice = await this.kit.web3.eth.getGasPrice()
-      celoTx.gasPrice = gasPrice
-    }
-  
-    celoTx.chainId = this.chainId
-    celoTx.nonce = await this.kit.web3.eth.getTransactionCount(web3Tx.from)
-  
-    return rlpEncodedTx(celoTx)
+    return this.wallet ? this.wallet.getAccounts() : []
   }
 
-  async estimateGas (web3Tx: any): Promise<string|number> {
-    let celoTx = this.fillTxDefaults(web3Tx.from, JSON.parse(JSON.stringify(web3Tx)))
-    celoTx = await this.kit.fillGasPrice(celoTx)
-  
-    if (celoTx.gas == null) {
-      try {
-        const gas = await this.kit.web3.eth.estimateGas(celoTx)
-        celoTx.gas = Math.round(gas * this.kit.connection.defaultGasInflationFactor)
-      } catch (e) {
-        throw new Error(e)
-      }
+  async sendTransaction (web3Tx: any): Promise<CeloTxReceipt|null> {
+    if (this.kit) {
+      const txResult: TransactionResult = await this.kit.sendTransaction(web3Tx)
+      return txResult.waitReceipt()
     }
-    return celoTx.gas
+    return null
   }
 
-  async estimateFee (web3Tx: any): Promise<String> {
-    const gas = await this.estimateGas(web3Tx)
-    const price = await this.kit.web3.eth.getGasPrice()
-    return this.kit.web3.utils.fromWei(this.kit.web3.utils.toBN(gas).mul(this.kit.web3.utils.toBN(price)))
-  }
-
-  private async sendTransactionMetaMask (web3Tx: any): Promise<TransactionResult> {
-    try {
-      const celoTx = await this.rlpEncodedTx(web3Tx)
-      const signature = await this.web3.eth.sign(getHashFromEncoded(celoTx.rlpEncode), celoTx.transaction.from)
-  
-      const v = this.kit.web3.utils.hexToNumber(`0x${signature.slice(130)}`) + (this.chainId * 2 + 8)
-      const r = Buffer.from(signature.slice(2, 66), 'hex')
-      const s = Buffer.from(signature.slice(66, 130), 'hex')
-  
-      const encodeTx = await encodeTransaction(celoTx, { v, s, r })
-  
-      return toTxResult(this.kit.web3.eth.sendSignedTransaction(encodeTx.raw))
-    } catch (error) {
-      throw new Error(error)
+  async sign (message: string, account: Address): Promise<string|null> {
+    if (this.kit && this.wallet) {
+      return (await this.wallet.signPersonalMessage(account, this.kit.web3.utils.toHex(message)))
     }
+    return null
   }
 
-  async sendTransaction (web3Tx: any): Promise<TransactionReceipt | null> {
-    let txReceipt = null
-    if (this.provider.isMetaMask) {
-      txReceipt = (await this.sendTransactionMetaMask(web3Tx)).waitReceipt()
-    } else if (this.provider.isDesktop) {
-      txReceipt = await this.kit.web3.eth.sendTransaction(web3Tx)
-    } else if (this.provider.isMobile) {
-      const provider = this.provider
-      web3Tx.chainId = await this.kit.web3.eth.getChainId()
-      const temp = () => {
-        return new Promise((resolve, reject) => {
-          provider.sendTransaction(web3Tx, resolve, reject)
-        })
-      }
-      const tx = await temp()
-      txReceipt = toTxResult(this.kit.web3.eth.sendSignedTransaction(tx)).waitReceipt()
-    } else if (this.provider.isLedger) {
-      const celoTx = await this.rlpEncodedTx(web3Tx)
-      const signature = await this.provider.signTransaction(this.provider.getPath(this.provider.index), celoTx.rlpEncode.slice(2))
-
-      let addToV = this.chainId * 2 + 35
-      const rv = parseInt(signature.v, 16)
-      if (rv !== addToV && (rv & addToV) !== rv) {
-        addToV += 1
-      }
-
-      const v = addToV
-      const r = Buffer.from(signature.r, 'hex')
-      const s = Buffer.from(signature.s, 'hex')
-
-      const encodeTx = await encodeTransaction(celoTx, { v, s, r })
-      txReceipt = toTxResult(this.kit.web3.eth.sendSignedTransaction(encodeTx.raw)).waitReceipt()
-    }
-    return txReceipt
-  }
-
-  async sign (message:string, account: string): Promise<string | null> {
-    if (this.provider.isMetaMask || this.provider.isDesktop) {
-      return (await this.web3.eth.personal.sign(message, account))
-    } else if (this.provider.isMobile) {
-      // TODO: valora not support sign message
-    } else if (this.provider.isLedger) {
-      // TODO: not tested
-      let {v, s, r} = await this.provider.sign(this.provider.getPath(this.provider.index), Buffer.from(message).toString('hex'))
-      v = (v - 27).toString(16)
-      if (v.length < 2) {
-        v = `0${v}`
-      }
-      return `0x${r}${s}${v}`
+  recover (message: string, signature: string): Address|null {
+    if (this.kit) {
+      const result = this.kit.web3.eth.accounts.recover(this.kit.web3.utils.toHex(message), signature)
+      return result
     }
     return null
   }

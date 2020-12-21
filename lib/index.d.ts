@@ -1,28 +1,25 @@
-import { TransactionReceipt } from 'web3-core';
+import { ContractKit } from '@celo/contractkit';
+import { Address, AbiItem, CeloTxReceipt } from '@celo/connect';
 interface Network {
     provider: string;
     blockscout?: string;
 }
 export declare const NETWORKS: object;
-export declare const ERC20ABI: Array<object>;
+export declare const ERC20ABI: AbiItem[];
 export declare class Celo {
-    protected kit: any;
-    protected web3: any;
-    protected provider: any;
-    protected isEnable: boolean;
-    protected chainId: any;
+    protected kit: ContractKit | null;
+    protected isConnected: boolean;
+    private isDesktop;
+    private wallet;
     protected contracts: any;
-    constructor(network: Network);
-    connect(onChainChanged: (network: object) => any, onAccountsChanged: (account: string) => any): Promise<boolean>;
+    connect(network: Network, onChainChanged: (network: object) => any, onAccountsChanged: (accounts: Address[]) => any): Promise<void>;
+    connectLedger(network: Network, onAccountsChanged: (accounts: Address[]) => any): Promise<void>;
+    private ledgerSetup;
     changeNetwork(network: Network): Promise<void>;
     private updateContracts;
-    getAccount(): Promise<string>;
-    private fillTxDefaults;
-    private rlpEncodedTx;
-    estimateGas(web3Tx: any): Promise<string | number>;
-    estimateFee(web3Tx: any): Promise<String>;
-    private sendTransactionMetaMask;
-    sendTransaction(web3Tx: any): Promise<TransactionReceipt | null>;
-    sign(message: string, account: string): Promise<string | null>;
+    getAccounts(): Promise<Address[]>;
+    sendTransaction(web3Tx: any): Promise<CeloTxReceipt | null>;
+    sign(message: string, account: Address): Promise<string | null>;
+    recover(message: string, signature: string): Address | null;
 }
 export {};
