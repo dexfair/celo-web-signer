@@ -77,7 +77,7 @@ export class DAppBrowserWallet extends WalletBase<DAppBrowserSigner> implements 
     }
     this.accounts.forEach(address => { this.removeSigner(address) })
     this.accounts = [(await temp())]
-    this.accounts.forEach(address => { this.addSigner(address, new DAppBrowserSigner(this.web3, address)) })
+    this.accounts.forEach(address => { this.addSigner(address, new DAppBrowserSigner(this.web3, this.mobile)) })
   }
 
   getAccounts(): Address[] {
