@@ -2,8 +2,9 @@
   "name": "@dexfair/celo-web-signer",
   "version": "0.4.5",
   "description": "celo web signer",
-  "main": "/lib/index.js",
-  "types": "/lib/index.d.ts",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "files": ["src/**/*", "lib/**/*"],
   "scripts": {
     "build": "tsc"
   },
