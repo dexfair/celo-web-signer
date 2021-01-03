@@ -3,7 +3,6 @@ import { Address, AbiItem, ReadOnlyWallet, TransactionResult, CeloTxReceipt } fr
 import Web3 from 'web3';
 import detectEthereumProvider from '@metamask/detect-provider';
 import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
-// import { detect } from  'detect-browser'
 import { ERC20ABI as erc20 } from './erc20.abi';
 import { newLedgerWalletWithSetup } from './wallet/ledgerWallet/wallet';
 import { newMetaMaskWalletWithSetup } from './wallet/metamask/wallet';
@@ -44,7 +43,15 @@ export class Celo {
 		exchange: null,
 	};
 
-	async connect(
+	getSupport = async () => {
+		const celo = !!(window as { [key: string]: any }).celo;
+		const metamask =
+			(window as { [key: string]: any }).ethereum && (window as { [key: string]: any }).ethereum.isMetaMask;
+		const usb = await TransportWebUSB.isSupported();
+		return { celo, metamask, usb };
+	};
+
+	async connectCelo(
 		network: Network,
 		// eslint-disable-next-line no-unused-vars
 		onChainChanged: (networkName: string) => void,
@@ -83,7 +90,16 @@ export class Celo {
 			} else {
 				throw new Error('other celo wallet did not support.');
 			}
-		} else if ((window as { [key: string]: any }).ethereum) {
+		}
+		return this.isConnected;
+	}
+
+	async connectMetaMask(
+		network: Network,
+		// eslint-disable-next-line no-unused-vars
+		onAccountsChanged: (accounts: Address[]) => void
+	) {
+		if ((window as { [key: string]: any }).ethereum) {
 			if ((window as { [key: string]: any }).ethereum.isMetaMask) {
 				await (window as { [key: string]: any }).ethereum.enable();
 			}
@@ -102,33 +118,39 @@ export class Celo {
 				throw new Error('other ethereum wallet did not support.');
 			}
 		}
+		return this.isConnected;
 	}
 
-	// eslint-disable-next-line no-unused-vars
-	async connectLedger(network: Network, onAccountsChanged: (accounts: Address[]) => void) {
-		if (!(window as { [key: string]: any }).celo || !(window as { [key: string]: any }).celo.isMobile) {
-			// const browser = detect()
-			if (await TransportWebUSB.isSupported()) {
-				if ((await TransportWebUSB.list()).length === 0) {
-					try {
-						await (window as { [key: string]: any }).navigator.usb.requestDevice({
-							filters: [{ vendorId: '0x2c97' }],
-						});
-					} catch (error) {
-						// eslint-disable-next-line no-console
-						console.log(new Error(error));
-					}
-				}
-				if ((await TransportWebUSB.list()).length > 0) {
-					const transport = await TransportWebUSB.create();
-					await this.ledgerSetup(network, transport, onAccountsChanged);
+	async connectLedgerUSB(
+		network: Network,
+		// eslint-disable-next-line no-unused-vars
+		onAccountsChanged: (accounts: Address[]) => void
+	) {
+		if (await TransportWebUSB.isSupported()) {
+			if ((await TransportWebUSB.list()).length === 0) {
+				try {
+					await (window as { [key: string]: any }).navigator.usb.requestDevice({
+						filters: [{ vendorId: '0x2c97' }],
+					});
+				} catch (error) {
+					// eslint-disable-next-line no-console
+					console.log(new Error(error));
 				}
 			}
+			if ((await TransportWebUSB.list()).length > 0) {
+				const transport = await TransportWebUSB.create();
+				await this.ledgerSetup(network, transport, onAccountsChanged);
+			}
 		}
+		return this.isConnected;
 	}
 
-	// eslint-disable-next-line no-unused-vars
-	private async ledgerSetup(network: Network, transport: any, onAccountsChanged: (accounts: Address[]) => void) {
+	private async ledgerSetup(
+		network: Network,
+		transport: any,
+		// eslint-disable-next-line no-unused-vars
+		onAccountsChanged: (accounts: Address[]) => void
+	) {
 		this.wallet = await newLedgerWalletWithSetup(transport);
 		const address = this.wallet.getAccounts();
 		if (address.length > 0) {
