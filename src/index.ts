@@ -181,10 +181,14 @@ export class Celo {
 	}
 
 	async changeNetwork(network: Network) {
-		if (!this.isDesktop && this.wallet) {
+		if (!this.isDesktop) {
 			this.network = network;
-			const web3 = new Web3(this.network.provider);
-			this.kit = newKitFromWeb3(web3, this.wallet);
+			if (this.wallet) {
+				const web3 = new Web3(this.network.provider);
+				this.kit = newKitFromWeb3(web3, this.wallet);
+			} else {
+				this.kit = newKit(this.network.provider);
+			}
 			await this.updateContracts();
 		}
 	}
