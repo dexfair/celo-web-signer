@@ -1,6 +1,6 @@
 {
   "name": "@dexfair/celo-web-signer",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "celo web signer",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -38,6 +38,7 @@
     "@celo/utils": "^1.0.0-beta3",
     "@celo/wallet-base": "^1.0.0-beta3",
     "@ledgerhq/hw-app-eth": "^5.35.1",
+    "@ledgerhq/hw-transport-web-ble": "^5.36.0",
     "@ledgerhq/hw-transport-webusb": "^5.34.1",
     "@metamask/detect-provider": "^1.2.0",
     "moment": "^2.29.1",

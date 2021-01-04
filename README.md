@@ -22,28 +22,32 @@ or if you use `yarn`
 ```javascript
 import { Celo, NETWORKS, ERC20ABI } from "@dexfair/celo-web-signer"
 
-const celo = new Celo(NETWORKS['Mainnet'])
+const celo = new Celo(NETWORKS.Mainnet)
 const onChainChanged = (network) => {
   // do something
 }
 const onAccountsChanged = (account) => {
   // do something
 }
-await celo.connect(onChainChanged, onAccountsChanged) // for extension wallet or dapp browser
+await celo.connectCelo(onChainChanged, onAccountsChanged) // for celo extension wallet
 
 // or
 
-await celo.connectLedger(onAccountsChanged) // for ledger wallet for web browsers
+await celo.connectMetaMask(onAccountsChanged) // for metamask extension wallet
+
+// or
+
+await celo.connectLedgerUSB(onAccountsChanged) // for ledger wallet for web browsers
 ```
 
 ## changeNetwork
 ```javascript
-await celo.changeNetwork(NETWORKS['Alfajores'])
+await celo.changeNetwork(NETWORKS.Alfajores)
 ```
 
 ## getAccount
 ```javascript
-const account = await celo.getAccount()
+const accounts = await celo.getAccounts()
 ```
 
 ## sendTransaction
