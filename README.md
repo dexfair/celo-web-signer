@@ -38,6 +38,10 @@ await celo.connectMetaMask(onAccountsChanged) // for metamask extension wallet
 // or
 
 await celo.connectLedgerUSB(onAccountsChanged) // for ledger wallet for web browsers
+
+// or
+
+await celo.connectLedgerBLE(onAccountsChanged) // for ledger wallet for web browsers
 ```
 
 ## changeNetwork
@@ -45,7 +49,7 @@ await celo.connectLedgerUSB(onAccountsChanged) // for ledger wallet for web brow
 await celo.changeNetwork(NETWORKS.Alfajores)
 ```
 
-## getAccount
+## getAccounts
 ```javascript
 const accounts = await celo.getAccounts()
 ```

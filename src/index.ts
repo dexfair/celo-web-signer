@@ -44,8 +44,6 @@ export class Celo {
 
 	protected contracts: any = {
 		erc20: null,
-		goldToken: null,
-		stableToken: null,
 		exchange: null,
 	};
 
@@ -198,8 +196,6 @@ export class Celo {
 			this.contracts[key] = null;
 		});
 		this.contracts.erc20 = new this.kit.web3.eth.Contract(ERC20ABI);
-		this.contracts.goldToken = await this.kit.contracts.getGoldToken();
-		this.contracts.stableToken = await this.kit.contracts.getStableToken();
 		this.contracts.exchange = await this.kit.contracts.getExchange();
 	}
 
