@@ -31,7 +31,6 @@ export declare class Celo {
     connectLedgerBLE(onAccountsChanged: (accounts: Address[]) => void): Promise<boolean>;
     private ledgerSetup;
     changeNetwork(network: Network): Promise<void>;
-    private updateContracts;
     getAccounts(): Promise<Address[]>;
     sendTransaction(web3Tx: any): Promise<CeloTxReceipt>;
     sign(message: string, account: Address): Promise<string | null>;

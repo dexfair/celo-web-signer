@@ -47,7 +47,6 @@ export class Celo {
 
 	public contracts: any = {
 		erc20: null,
-		exchange: null,
 	};
 
 	getSupport = async () => {
@@ -66,6 +65,7 @@ export class Celo {
 	constructor(network: Network) {
 		this.network = network;
 		this.kit = newKit(this.network.provider);
+		this.contracts.erc20 = new this.kit.web3.eth.Contract(ERC20ABI);
 	}
 
 	async disconnect() {
@@ -105,7 +105,6 @@ export class Celo {
 				const web3 = new Web3(this.network.provider);
 				this.wallet = await newDAppBrowserWalletWithSetup(web3, provider);
 				this.kit = newKitFromWeb3(web3, this.wallet);
-				await this.updateContracts();
 				if (onAccountsChanged) {
 					const accounts = this.wallet.getAccounts();
 					onAccountsChanged(accounts);
@@ -131,7 +130,6 @@ export class Celo {
 				const web3 = new Web3(this.network.provider);
 				this.wallet = await newMetaMaskWalletWithSetup(provider, onAccountsChanged);
 				this.kit = newKitFromWeb3(web3, this.wallet);
-				await this.updateContracts();
 				if (onAccountsChanged) {
 					const accounts = this.wallet.getAccounts();
 					onAccountsChanged(accounts);
@@ -177,7 +175,6 @@ export class Celo {
 		if (address.length > 0) {
 			const web3 = new Web3(this.network.provider);
 			this.kit = newKitFromWeb3(web3, this.wallet);
-			await this.updateContracts();
 			if (onAccountsChanged) {
 				onAccountsChanged(address);
 			}
@@ -194,16 +191,7 @@ export class Celo {
 			} else {
 				this.kit = newKit(this.network.provider);
 			}
-			await this.updateContracts();
 		}
-	}
-
-	private async updateContracts() {
-		Object.keys(this.contracts).forEach((key) => {
-			this.contracts[key] = null;
-		});
-		this.contracts.erc20 = new this.kit.web3.eth.Contract(ERC20ABI);
-		this.contracts.exchange = await this.kit.contracts.getExchange();
 	}
 
 	async getAccounts(): Promise<Address[]> {
