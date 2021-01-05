@@ -15,8 +15,11 @@ interface Network {
 	blockscout?: string;
 }
 
-export const NETWORKS: any = {
-	Mainnet: { provider: 'https://rc1-forno.celo-testnet.org', blockscout: 'https://explorer.celo.org' },
+export const NETWORKS: { [key: string]: Network } = {
+	Mainnet: {
+		provider: 'https://rc1-forno.celo-testnet.org',
+		blockscout: 'https://explorer.celo.org',
+	},
 	Alfajores: {
 		provider: 'https://alfajores-forno.celo-testnet.org',
 		blockscout: 'https://alfajores-blockscout.celo-testnet.org',
@@ -42,7 +45,7 @@ export class Celo {
 
 	private wallet: ReadOnlyWallet | null = null;
 
-	protected contracts: any = {
+	public contracts: any = {
 		erc20: null,
 		exchange: null,
 	};
@@ -54,6 +57,10 @@ export class Celo {
 		const usb = await TransportWebUSB.isSupported();
 		const ble = await BluetoothTransport.isSupported();
 		return { celo, metamask, usb, ble };
+	};
+
+	getNetwork = (): Network => {
+		return this.network;
 	};
 
 	constructor(network: Network) {

@@ -4,7 +4,9 @@ interface Network {
     provider: string;
     blockscout?: string;
 }
-export declare const NETWORKS: any;
+export declare const NETWORKS: {
+    [key: string]: Network;
+};
 export declare const ERC20ABI: AbiItem[];
 export declare class Celo {
     kit: ContractKit;
@@ -13,13 +15,14 @@ export declare class Celo {
     private isDesktop;
     private transport;
     private wallet;
-    protected contracts: any;
+    contracts: any;
     getSupport: () => Promise<{
         celo: boolean;
         metamask: any;
         usb: boolean;
         ble: any;
     }>;
+    getNetwork: () => Network;
     constructor(network: Network);
     disconnect(): Promise<void>;
     connectCelo(onChainChanged: (networkName: string) => void, onAccountsChanged: (accounts: Address[]) => void): Promise<boolean>;
