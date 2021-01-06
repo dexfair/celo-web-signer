@@ -2,7 +2,7 @@ import { ReadOnlyWallet } from '@celo/connect';
 import { WalletBase } from '@celo/wallet-base';
 import { Signer } from './signer';
 
-const Ledger = require('@ledgerhq/hw-app-eth').default;
+const Ledger = require('./hw-app-celo/Celo').default;
 
 export class Wallet extends WalletBase<Signer> implements ReadOnlyWallet {
 	private ledger: any;
