@@ -214,7 +214,11 @@ export class Celo {
 	async sign(message: string, account: Address): Promise<string | null> {
 		if (this.wallet) {
 			const result = await this.wallet.signPersonalMessage(account, this.kit.web3.utils.toHex(message));
-			return result;
+			let v = this.kit.web3.utils.hexToNumber(`0x${result.slice(130)}`);
+			if (v < 27) {
+				v += 27;
+			}
+			return result.slice(0, 130).concat(v.toString(16));
 		}
 		return null;
 	}
