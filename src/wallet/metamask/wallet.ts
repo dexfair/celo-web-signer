@@ -7,7 +7,7 @@ export class Wallet extends WalletBase<Signer> implements ReadOnlyWallet {
 	private web3: any;
 
 	// eslint-disable-next-line no-unused-vars
-	constructor(provider: any, onAccountsChanged: (accounts: Address[]) => void | undefined) {
+	constructor(provider: any, onAccountsChanged: (type: string, accounts: Address[]) => void | undefined) {
 		super();
 		this.web3 = new Web3(provider);
 		provider.on('accountsChanged', (accounts: Array<Address>) => {
@@ -19,7 +19,7 @@ export class Wallet extends WalletBase<Signer> implements ReadOnlyWallet {
 				this.addSigner(address, new Signer(this.web3, address));
 			});
 			if (onAccountsChanged) {
-				onAccountsChanged(accounts);
+				onAccountsChanged('metamask', accounts);
 			}
 		});
 	}
@@ -39,7 +39,7 @@ export class Wallet extends WalletBase<Signer> implements ReadOnlyWallet {
 export async function newMetaMaskWalletWithSetup(
 	provider: any,
 	// eslint-disable-next-line no-unused-vars
-	onAccountsChanged: (accounts: Address[]) => void | undefined
+	onAccountsChanged: (type: string, accounts: Address[]) => void | undefined
 ): Promise<Wallet> {
 	const wallet = new Wallet(provider, onAccountsChanged);
 	await wallet.init();

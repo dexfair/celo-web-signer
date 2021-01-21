@@ -70,10 +70,14 @@ export class Celo {
 
 	async disconnect() {
 		if (this.transport) {
-			await this.transport.on('disconnect');
+			await this.transport.on('disconnect', () => {
+				this.transport = null;
+			});
 		}
-		this.transport = null;
 		this.isConnected = false;
+		if (localStorage) {
+			localStorage.setItem('CeloWebSigner', '');
+		}
 	}
 
 	async connectCelo(
@@ -117,9 +121,31 @@ export class Celo {
 		return this.isConnected;
 	}
 
+	// eslint-disable-next-line no-unused-vars
+	async reConnect(onAccountsChanged: (type: string, accounts: Address[]) => void) {
+		if (!this.isConnected) {
+			if (localStorage) {
+				switch (localStorage.getItem('CeloWebSigner')) {
+					case 'metamask':
+						await this.connectMetaMask(onAccountsChanged);
+						break;
+					case 'usb':
+						await this.connectLedgerUSB(onAccountsChanged);
+						break;
+					case 'ble':
+						await this.connectLedgerBLE(onAccountsChanged);
+						break;
+					default:
+						break;
+				}
+			}
+		}
+		return this.isConnected;
+	}
+
 	async connectMetaMask(
 		// eslint-disable-next-line no-unused-vars
-		onAccountsChanged: (accounts: Address[]) => void
+		onAccountsChanged: (type: string, accounts: Address[]) => void
 	) {
 		if ((window as { [key: string]: any }).ethereum) {
 			if ((window as { [key: string]: any }).ethereum.isMetaMask) {
@@ -132,7 +158,8 @@ export class Celo {
 				this.kit = newKitFromWeb3(web3, this.wallet);
 				if (onAccountsChanged) {
 					const accounts = this.wallet.getAccounts();
-					onAccountsChanged(accounts);
+					onAccountsChanged('metamask', accounts);
+					localStorage.setItem('CeloWebSigner', 'metamask');
 				}
 				this.isConnected = true;
 			} else {
@@ -144,30 +171,31 @@ export class Celo {
 
 	async connectLedgerUSB(
 		// eslint-disable-next-line no-unused-vars
-		onAccountsChanged: (accounts: Address[]) => void
+		onAccountsChanged: (type: string, accounts: Address[]) => void
 	) {
 		if (await TransportWebUSB.isSupported()) {
 			const transport = await TransportWebUSB.create();
-			await this.ledgerSetup(transport, onAccountsChanged);
+			await this.ledgerSetup('usb', transport, onAccountsChanged);
 		}
 		return this.isConnected;
 	}
 
 	async connectLedgerBLE(
 		// eslint-disable-next-line no-unused-vars
-		onAccountsChanged: (accounts: Address[]) => void
+		onAccountsChanged: (type: string, accounts: Address[]) => void
 	) {
 		if (await BluetoothTransport.isSupported()) {
 			const transport = await BluetoothTransport.create();
-			await this.ledgerSetup(transport, onAccountsChanged);
+			await this.ledgerSetup('ble', transport, onAccountsChanged);
 		}
 		return this.isConnected;
 	}
 
 	private async ledgerSetup(
+		type: string,
 		transport: any,
 		// eslint-disable-next-line no-unused-vars
-		onAccountsChanged: (accounts: Address[]) => void
+		onAccountsChanged: (_type: string, accounts: Address[]) => void
 	) {
 		this.transport = transport;
 		this.wallet = await newLedgerWalletWithSetup(transport);
@@ -176,7 +204,8 @@ export class Celo {
 			const web3 = new Web3(this.network.provider);
 			this.kit = newKitFromWeb3(web3, this.wallet);
 			if (onAccountsChanged) {
-				onAccountsChanged(address);
+				onAccountsChanged(type, address);
+				localStorage.setItem('CeloWebSigner', type);
 			}
 			this.isConnected = true;
 		}

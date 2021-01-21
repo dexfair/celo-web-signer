@@ -26,9 +26,10 @@ export declare class Celo {
     constructor(network: Network);
     disconnect(): Promise<void>;
     connectCelo(onChainChanged: (networkName: string) => void, onAccountsChanged: (accounts: Address[]) => void): Promise<boolean>;
-    connectMetaMask(onAccountsChanged: (accounts: Address[]) => void): Promise<boolean>;
-    connectLedgerUSB(onAccountsChanged: (accounts: Address[]) => void): Promise<boolean>;
-    connectLedgerBLE(onAccountsChanged: (accounts: Address[]) => void): Promise<boolean>;
+    reConnect(onAccountsChanged: (type: string, accounts: Address[]) => void): Promise<boolean>;
+    connectMetaMask(onAccountsChanged: (type: string, accounts: Address[]) => void): Promise<boolean>;
+    connectLedgerUSB(onAccountsChanged: (type: string, accounts: Address[]) => void): Promise<boolean>;
+    connectLedgerBLE(onAccountsChanged: (type: string, accounts: Address[]) => void): Promise<boolean>;
     private ledgerSetup;
     changeNetwork(network: Network): Promise<void>;
     getAccounts(): Promise<Address[]>;
