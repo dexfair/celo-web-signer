@@ -159,7 +159,9 @@ export class Celo {
 				if (onAccountsChanged) {
 					const accounts = this.wallet.getAccounts();
 					onAccountsChanged('metamask', accounts);
-					localStorage.setItem('CeloWebSigner', 'metamask');
+					if (localStorage) {
+						localStorage.setItem('CeloWebSigner', 'metamask');
+					}
 				}
 				this.isConnected = true;
 			} else {
@@ -205,7 +207,9 @@ export class Celo {
 			this.kit = newKitFromWeb3(web3, this.wallet);
 			if (onAccountsChanged) {
 				onAccountsChanged(type, address);
-				localStorage.setItem('CeloWebSigner', type);
+				if (localStorage) {
+					localStorage.setItem('CeloWebSigner', type);
+				}
 			}
 			this.isConnected = true;
 		}
