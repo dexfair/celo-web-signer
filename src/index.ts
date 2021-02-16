@@ -39,13 +39,13 @@ export class Celo {
 
 	private network: Network;
 
-	private isDesktop: boolean = false;
+	private desktopProvider: any = null;
 
 	private transport: any = null;
 
 	private wallet: ReadOnlyWallet | null = null;
 
-	public contracts: any = {
+	public contracts: { [name: string]: any } = {
 		erc20: null,
 	};
 
@@ -82,62 +82,61 @@ export class Celo {
 
 	async connectCelo(
 		// eslint-disable-next-line no-unused-vars
-		onChainChanged: (networkName: string) => void,
+		onAccountsChanged: (type: string, accounts: Address[]) => void,
 		// eslint-disable-next-line no-unused-vars
-		onAccountsChanged: (accounts: Address[]) => void
+		onChainChanged: (networkName: string) => void
 	) {
 		if ((window as { [key: string]: any }).celo) {
 			const provider: any = (window as { [key: string]: any }).celo;
 			if (provider.isDesktop) {
-				this.kit = newKit(this.network.provider);
+				const INDEX: { [key: string]: string } = {
+					'0xa4ec': 'Mainnet',
+					'42220': 'Mainnet',
+					'0xaef3': 'Alfajores',
+					'44787': 'Alfajores',
+					'0xf370': 'Baklava',
+					'62320': 'Baklava',
+				};
+				await provider.enable();
+				const chainIdHex = await provider.request({ method: 'eth_chainId' });
+				const chainName = INDEX[chainIdHex];
+				this.kit = newKit(NETWORKS[chainName].provider);
 				provider.on('accountsChanged', (accounts: Array<Address>) => {
 					if (onAccountsChanged) {
-						onAccountsChanged(accounts);
+						onAccountsChanged('desktop', accounts);
 					}
 				});
-				provider.on('chainChanged', async (chainId: string) => {
-					const INDEX: any = {
-						'42220': { name: 'Mainnet' },
-						'44787': { name: 'Alfajores' },
-						'62320': { name: 'Baklava' },
-					};
-					if (onChainChanged) {
-						onChainChanged(INDEX[chainId].name);
+				provider.on('networkChanged', (chainIdDecimal: string) => {
+					// https://github.com/MetaMask/metamask-extension/issues/8226
+					const newChainName = INDEX[chainIdDecimal];
+					if (newChainName) {
+						this.kit = newKit(NETWORKS[newChainName].provider);
+						if (onChainChanged) {
+							onChainChanged(newChainName);
+						}
 					}
 				});
+				if (onAccountsChanged) {
+					const web3 = new Web3(provider);
+					const accounts = await web3.eth.getAccounts();
+					onAccountsChanged('desktop', accounts);
+				}
+				if (onChainChanged) {
+					onChainChanged(chainName);
+				}
+				this.desktopProvider = provider;
+				this.isConnected = true;
 			} else if (provider.isMobile) {
 				const web3 = new Web3(this.network.provider);
 				this.wallet = await newDAppBrowserWalletWithSetup(web3, provider);
 				this.kit = newKitFromWeb3(web3, this.wallet);
 				if (onAccountsChanged) {
 					const accounts = this.wallet.getAccounts();
-					onAccountsChanged(accounts);
+					onAccountsChanged('mobile', accounts);
 				}
 				this.isConnected = true;
 			} else {
 				throw new Error('other celo wallet did not support.');
-			}
-		}
-		return this.isConnected;
-	}
-
-	// eslint-disable-next-line no-unused-vars
-	async reConnect(onAccountsChanged: (type: string, accounts: Address[]) => void) {
-		if (!this.isConnected) {
-			if (localStorage) {
-				switch (localStorage.getItem('CeloWebSigner')) {
-					case 'metamask':
-						await this.connectMetaMask(onAccountsChanged);
-						break;
-					case 'usb':
-						await this.connectLedgerUSB(onAccountsChanged);
-						break;
-					case 'ble':
-						await this.connectLedgerBLE(onAccountsChanged);
-						break;
-					default:
-						break;
-				}
 			}
 		}
 		return this.isConnected;
@@ -215,8 +214,37 @@ export class Celo {
 		}
 	}
 
+	async reConnect(
+		// eslint-disable-next-line no-unused-vars
+		onAccountsChanged: (type: string, accounts: Address[]) => void,
+		// eslint-disable-next-line no-unused-vars
+		onChainChanged: (networkName: string) => void
+	) {
+		if (!this.isConnected) {
+			if (localStorage) {
+				switch (localStorage.getItem('CeloWebSigner')) {
+					case 'metamask':
+						await this.connectMetaMask(onAccountsChanged);
+						break;
+					case 'usb':
+						await this.connectLedgerUSB(onAccountsChanged);
+						break;
+					case 'ble':
+						await this.connectLedgerBLE(onAccountsChanged);
+						break;
+					case 'celo':
+						await this.connectCelo(onAccountsChanged, onChainChanged);
+						break;
+					default:
+						break;
+				}
+			}
+		}
+		return this.isConnected;
+	}
+
 	async changeNetwork(network: Network) {
-		if (!this.isDesktop) {
+		if (!this.desktopProvider) {
 			this.network = network;
 			if (this.wallet) {
 				const web3 = new Web3(this.network.provider);
@@ -228,17 +256,41 @@ export class Celo {
 	}
 
 	async getAccounts(): Promise<Address[]> {
-		if (this.isDesktop) {
-			const result = await this.kit.web3.eth.getAccounts();
-			return result;
+		if (this.wallet) {
+			return this.wallet ? this.wallet.getAccounts() : [];
 		}
-		return this.wallet ? this.wallet.getAccounts() : [];
+		if (this.desktopProvider) {
+			const web3 = new Web3(this.desktopProvider);
+			const accounts = await web3.eth.getAccounts();
+			return accounts;
+		}
+		return [];
 	}
 
 	async sendTransaction(web3Tx: any): Promise<CeloTxReceipt> {
 		try {
-			const txResult: TransactionResult = await this.kit.sendTransaction(web3Tx);
-			return txResult.waitReceipt();
+			if (this.wallet) {
+				const txResult: TransactionResult = await this.kit.sendTransaction(web3Tx);
+				return txResult.waitReceipt();
+			}
+			if (this.desktopProvider) {
+				const txHash = await this.desktopProvider.request({
+					method: 'eth_sendTransaction',
+					params: [web3Tx],
+				});
+				for (let i = 0; i < 50; i += 1) {
+					// eslint-disable-next-line no-await-in-loop
+					const receipt = await this.kit.web3.eth.getTransactionReceipt(txHash);
+					if (!receipt) {
+						// eslint-disable-next-line no-await-in-loop
+						await new Promise((resolve) => setTimeout(resolve, 1000));
+						// eslint-disable-next-line no-continue
+						continue;
+					}
+					return receipt;
+				}
+			}
+			throw new Error('time out');
 		} catch (error) {
 			throw new Error(error);
 		}
@@ -253,6 +305,13 @@ export class Celo {
 			}
 			return result.slice(0, 130).concat(v.toString(16));
 		}
+		if (this.desktopProvider) {
+			const sig = await this.desktopProvider.request({
+				method: 'personal_sign',
+				params: [message, account],
+			});
+			return sig;
+		}
 		return null;
 	}
 
@@ -263,5 +322,13 @@ export class Celo {
 		} catch (error) {
 			throw new Error(error);
 		}
+	}
+
+	async erc20balanceOf(tokenAddress: Address, account: Address): Promise<string> {
+		const temp = await this.kit.web3.eth.call({
+			to: tokenAddress,
+			data: this.contracts.erc20.methods.balanceOf(account).encodeABI(),
+		});
+		return temp !== '0x' ? this.kit.web3.eth.abi.decodeParameter('uint256', temp).toString() : '';
 	}
 }

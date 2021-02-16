@@ -12,10 +12,12 @@ export declare class Celo {
     kit: ContractKit;
     isConnected: boolean;
     private network;
-    private isDesktop;
+    private desktopProvider;
     private transport;
     private wallet;
-    contracts: any;
+    contracts: {
+        [name: string]: any;
+    };
     getSupport: () => Promise<{
         celo: boolean;
         metamask: any;
@@ -25,16 +27,17 @@ export declare class Celo {
     getNetwork: () => Network;
     constructor(network: Network);
     disconnect(): Promise<void>;
-    connectCelo(onChainChanged: (networkName: string) => void, onAccountsChanged: (accounts: Address[]) => void): Promise<boolean>;
-    reConnect(onAccountsChanged: (type: string, accounts: Address[]) => void): Promise<boolean>;
+    connectCelo(onAccountsChanged: (type: string, accounts: Address[]) => void, onChainChanged: (networkName: string) => void): Promise<boolean>;
     connectMetaMask(onAccountsChanged: (type: string, accounts: Address[]) => void): Promise<boolean>;
     connectLedgerUSB(onAccountsChanged: (type: string, accounts: Address[]) => void): Promise<boolean>;
     connectLedgerBLE(onAccountsChanged: (type: string, accounts: Address[]) => void): Promise<boolean>;
     private ledgerSetup;
+    reConnect(onAccountsChanged: (type: string, accounts: Address[]) => void, onChainChanged: (networkName: string) => void): Promise<boolean>;
     changeNetwork(network: Network): Promise<void>;
     getAccounts(): Promise<Address[]>;
     sendTransaction(web3Tx: any): Promise<CeloTxReceipt>;
     sign(message: string, account: Address): Promise<string | null>;
     recover(message: string, signature: string): Address;
+    erc20balanceOf(tokenAddress: Address, account: Address): Promise<string>;
 }
 export {};
