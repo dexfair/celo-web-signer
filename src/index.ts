@@ -74,10 +74,10 @@ export class Celo {
 				this.transport = null;
 			});
 		}
-		this.isConnected = false;
 		if (localStorage) {
 			localStorage.setItem('CeloWebSigner', '');
 		}
+		this.isConnected = false;
 	}
 
 	async connectCelo(
@@ -103,7 +103,7 @@ export class Celo {
 				this.kit = newKit(NETWORKS[chainName].provider);
 				provider.on('accountsChanged', (accounts: Array<Address>) => {
 					if (onAccountsChanged) {
-						onAccountsChanged('desktop', accounts);
+						onAccountsChanged('celo', accounts);
 					}
 				});
 				provider.on('networkChanged', (chainIdDecimal: string) => {
@@ -119,10 +119,13 @@ export class Celo {
 				if (onAccountsChanged) {
 					const web3 = new Web3(provider);
 					const accounts = await web3.eth.getAccounts();
-					onAccountsChanged('desktop', accounts);
+					onAccountsChanged('celo', accounts);
 				}
 				if (onChainChanged) {
 					onChainChanged(chainName);
+				}
+				if (localStorage) {
+					localStorage.setItem('CeloWebSigner', 'celo');
 				}
 				this.desktopProvider = provider;
 				this.isConnected = true;
@@ -133,6 +136,9 @@ export class Celo {
 				if (onAccountsChanged) {
 					const accounts = this.wallet.getAccounts();
 					onAccountsChanged('mobile', accounts);
+				}
+				if (localStorage) {
+					localStorage.setItem('CeloWebSigner', 'celo');
 				}
 				this.isConnected = true;
 			} else {
@@ -158,9 +164,9 @@ export class Celo {
 				if (onAccountsChanged) {
 					const accounts = this.wallet.getAccounts();
 					onAccountsChanged('metamask', accounts);
-					if (localStorage) {
-						localStorage.setItem('CeloWebSigner', 'metamask');
-					}
+				}
+				if (localStorage) {
+					localStorage.setItem('CeloWebSigner', 'metamask');
 				}
 				this.isConnected = true;
 			} else {
@@ -206,9 +212,9 @@ export class Celo {
 			this.kit = newKitFromWeb3(web3, this.wallet);
 			if (onAccountsChanged) {
 				onAccountsChanged(type, address);
-				if (localStorage) {
-					localStorage.setItem('CeloWebSigner', type);
-				}
+			}
+			if (localStorage) {
+				localStorage.setItem('CeloWebSigner', type);
 			}
 			this.isConnected = true;
 		}
