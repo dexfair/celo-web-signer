@@ -101,6 +101,7 @@ export class Celo {
 				const chainIdHex = await provider.request({ method: 'eth_chainId' });
 				const chainName = INDEX[chainIdHex];
 				this.kit = newKit(NETWORKS[chainName].provider);
+				this.network = NETWORKS[chainName];
 				provider.on('accountsChanged', (accounts: Array<Address>) => {
 					if (onAccountsChanged) {
 						onAccountsChanged('celo', accounts);
@@ -111,6 +112,7 @@ export class Celo {
 					const newChainName = INDEX[chainIdDecimal];
 					if (newChainName) {
 						this.kit = newKit(NETWORKS[newChainName].provider);
+						this.network = NETWORKS[newChainName];
 						if (onChainChanged) {
 							onChainChanged(newChainName);
 						}
