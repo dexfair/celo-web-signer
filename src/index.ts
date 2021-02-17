@@ -265,6 +265,9 @@ export class Celo {
 
 	async getAccounts(): Promise<Address[]> {
 		if (this.wallet) {
+			const temp = this.wallet ? this.wallet.getAccounts() : [];
+			const account: Address[] = [];
+			temp.forEach((address) => account.push(this.kit.web3.utils.toChecksumAddress(address)));
 			return this.wallet ? this.wallet.getAccounts() : [];
 		}
 		if (this.desktopProvider) {
@@ -291,7 +294,7 @@ export class Celo {
 					const receipt = await this.kit.web3.eth.getTransactionReceipt(txHash);
 					if (!receipt) {
 						// eslint-disable-next-line no-await-in-loop
-						await new Promise((resolve) => setTimeout(resolve, 1000));
+						await new Promise((resolve) => setTimeout(resolve, 5000));
 						// eslint-disable-next-line no-continue
 						continue;
 					}

@@ -4,7 +4,7 @@ import Web3 from 'web3';
 import { Signer } from './signer';
 
 export class Wallet extends WalletBase<Signer> implements ReadOnlyWallet {
-	private web3: any;
+	private web3: Web3;
 
 	// eslint-disable-next-line no-unused-vars
 	constructor(provider: any, onAccountsChanged: (type: string, accounts: Address[]) => void | undefined) {
