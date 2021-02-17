@@ -13,6 +13,7 @@ export declare class Celo {
     isConnected: boolean;
     private network;
     private desktopProvider;
+    private metamaskProvider;
     private transport;
     private wallet;
     contracts: {

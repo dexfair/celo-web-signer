@@ -41,6 +41,8 @@ export class Celo {
 
 	private desktopProvider: any = null;
 
+	private metamaskProvider: any = null;
+
 	private transport: any = null;
 
 	private wallet: ReadOnlyWallet | null = null;
@@ -73,6 +75,12 @@ export class Celo {
 			await this.transport.on('disconnect', () => {
 				this.transport = null;
 			});
+		}
+		if (this.desktopProvider) {
+			this.desktopProvider.removeAllListeners();
+		}
+		if (this.metamaskProvider) {
+			this.metamaskProvider.removeAllListeners();
 		}
 		if (localStorage) {
 			localStorage.setItem('CeloWebSigner', '');
@@ -170,6 +178,7 @@ export class Celo {
 				if (localStorage) {
 					localStorage.setItem('CeloWebSigner', 'metamask');
 				}
+				this.metamaskProvider = provider;
 				this.isConnected = true;
 			} else {
 				throw new Error('other ethereum wallet did not support.');
